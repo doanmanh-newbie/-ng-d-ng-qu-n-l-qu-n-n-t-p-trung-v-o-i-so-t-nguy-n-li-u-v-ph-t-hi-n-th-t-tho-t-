@@ -11,18 +11,11 @@ Chủ quán khó biết nguyên liệu hao hụt có đúng với số ly đã b
 - **Lý thuyết** = Σ (số bán × định lượng công thức)
 - **Chênh lệch** = thực dùng − lý thuyết → quy ra số ly và doanh thu ước tính
 
-## Thành viên
-| Họ tên | Vai trò | Phụ trách |
-|---|---|---|
-| (điền) | Trưởng nhóm, nghiệp vụ | Đối soát, kết ca, SQL |
-| (điền) | Thành viên | Nguyên liệu, công thức, nhập kho |
-| (điền) | Thành viên | Bán hàng, bàn, mang đi |
-
 ## Cấu trúc
 ```
 lib/          mã Dart (core/ dùng chung, features/ theo chức năng)
 test/         kiểm thử
-supabase/     SQL: bảng, ràng buộc, hàm đối soát, dữ liệu thử
+database/     sd supabase SQL: bảng, ràng buộc, hàm đối soát, dữ liệu thử
 docs/         tài liệu, báo cáo tuần, biên bản họp
 ```
 
