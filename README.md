@@ -11,11 +11,18 @@ Chủ quán khó biết nguyên liệu hao hụt có đúng với số ly đã b
 - **Lý thuyết** = Σ (số bán × định lượng công thức)
 - **Chênh lệch** = thực dùng − lý thuyết → quy ra số ly và doanh thu ước tính
 
+## Thành viên
+| Họ tên | Vai trò | Phụ trách |
+|---|---|---|
+| (điền) | Trưởng nhóm, nghiệp vụ | Đối soát, kết ca, SQL |
+| (điền) | Thành viên | Nguyên liệu, công thức, nhập kho |
+| (điền) | Thành viên | Bán hàng, bàn, mang đi |
+
 ## Cấu trúc
 ```
 lib/          mã Dart (core/ dùng chung, features/ theo chức năng)
 test/         kiểm thử
-database/     sd supabase SQL: bảng, ràng buộc, hàm đối soát, dữ liệu thử
+database/     SQL: bảng, luật, hàm nghiệp vụ, hàm đối soát, dữ liệu mô phỏng, kiểm thử
 docs/         tài liệu, báo cáo tuần, biên bản họp
 ```
 
@@ -29,7 +36,8 @@ docs/         tài liệu, báo cáo tuần, biên bản họp
    ```
    flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...
    ```
-6. Database: chạy lần lượt các file trong `supabase/` trên SQL Editor của Supabase.
+6. Kiểm thử: `flutter test`. Cách tổ chức code (OOP): `docs/kien-truc-code.md`.
+7. Database: chạy lần lượt `001` đến `004` trong `database/` trên SQL Editor của Supabase (xem `database/README.md`). `005` là dữ liệu mô phỏng, chỉ chạy trên database thử.
 
 ## Tiến độ
 Xem tab **Projects** (bảng việc), **Milestones** (8 tuần) và thư mục `docs/weekly/`.

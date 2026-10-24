@@ -16,3 +16,4 @@ local.properties
 secrets.*
 key.properties
 *.jks
+env.json
