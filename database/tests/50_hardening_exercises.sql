@@ -3,11 +3,14 @@
 -- Test race 2 phiên song song: xem tests/51_concurrency.sh. KHÔNG chạy trên Supabase thật (có xóa sạch dữ liệu).
 \set ON_ERROR_STOP on
 
-truncate staff, ingredients, menu_items, menu_sizes, recipe_lines, areas, dining_tables, shifts, bills, bill_lines,
+truncate shops, user_settings, shop_invites, staff, ingredients, menu_items, menu_sizes, recipe_lines, areas, dining_tables, shifts, bills, bill_lines,
          purchases, stock_counts, waste_logs, stock_ledger, audit_log, pin_attempts restart identity cascade;
 delete from auth.users;
+insert into shops (id, name) values ('00000000-0000-0000-0000-0000000000f1', 'Quán test');
 insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000a1', 'owner@test');
-insert into staff (auth_user_id, full_name, role) values ('00000000-0000-0000-0000-0000000000a1', 'Chủ', 'owner');
+insert into staff (shop_id, auth_user_id, full_name, role) values ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000a1', 'Chủ', 'owner');
+-- (đặt người đăng nhập mặc định = chủ để giá trị mặc định shop_id của các lệnh nạp dữ liệu bên dưới trỏ đúng quán)
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', false);
 insert into ingredients (name, unit, importance) values ('Sữa', 'ml', 'important'), ('Cà phê', 'g', 'important');
 insert into menu_items (name) values ('Cà phê sữa'), ('Trà sữa');
 insert into menu_sizes (item_id, size_name, price) select id, 'M', 29000 from menu_items;
@@ -34,8 +37,15 @@ begin
 
   -- Bán 1 ly của 'sold'
   perform set_config('request.jwt.claim.sub', owner_u, true); set local session authorization authenticated;
+  begin perform open_shift(null); raise exception 'LE RA PHAI LOI (open_shift NULL)';
+  exception when others then get stacked diagnostics msg = message_text;
+    if msg <> 'OPENING_CASH_INVALID' then raise exception 'open_shift: mong OPENING_CASH_INVALID, nhan: %', msg; end if; end;
   s := open_shift(0);
-  b := open_bill(t1, 'dine_in', 1); perform add_bill_line(b, sold, 1); perform pay_bill(b, 'cash');
+  b := open_bill(t1, 'dine_in', 1); perform add_bill_line(b, sold, 1);
+  begin perform pay_bill(b, null); raise exception 'LE RA PHAI LOI (pay_bill NULL)';
+  exception when others then get stacked diagnostics msg = message_text;
+    if msg <> 'PAYMENT_METHOD_INVALID' then raise exception 'pay_bill: mong PAYMENT_METHOD_INVALID, nhan: %', msg; end if; end;
+  perform pay_bill(b, 'cash');
   reset session authorization;
 
   -- Đã bán: sửa, xóa, thêm dòng, đổi size_id đều bị chặn với RECIPE_IN_USE
@@ -67,6 +77,9 @@ begin
     if msg not in ('MISSING_CLOSE_COUNTS') then raise exception 'close_shift: mong MISSING_CLOSE_COUNTS, nhan: %', msg; end if; end;
   perform submit_stock_count(milk, 'close', 0);
   perform submit_stock_count(cafe, 'close', 0);
+  begin perform close_shift(null); raise exception 'LE RA PHAI LOI (close_shift NULL)';
+  exception when others then get stacked diagnostics msg = message_text;
+    if msg <> 'CLOSING_CASH_INVALID' then raise exception 'close_shift: mong CLOSING_CASH_INVALID, nhan: %', msg; end if; end;
   perform close_shift(29000);
   begin perform open_bill(t1, 'dine_in', 1); raise exception 'LE RA PHAI LOI (open_bill khi khong co ca)';
   exception when others then get stacked diagnostics msg = message_text;
@@ -75,6 +88,14 @@ begin
   exception when others then get stacked diagnostics msg = message_text;
     if msg <> 'NO_OPEN_SHIFT' then raise exception 'close_shift: mong NO_OPEN_SHIFT, nhan: %', msg; end if; end;
   reset session authorization;
+
+  -- Ràng buộc ở bảng phải giữ invariant ngay cả khi không đi qua RPC.
+  begin update bills set payment_method = null where id = b;
+    raise exception 'LE RA PHAI LOI (paid bill thieu payment_method)';
+  exception when check_violation then null; end;
+  begin update shifts set closing_cash = null where id = s;
+    raise exception 'LE RA PHAI LOI (closed shift thieu closing_cash)';
+  exception when check_violation then null; end;
 
   raise notice 'HARDENING: TAT CA DEU DUNG';
 end $test$;

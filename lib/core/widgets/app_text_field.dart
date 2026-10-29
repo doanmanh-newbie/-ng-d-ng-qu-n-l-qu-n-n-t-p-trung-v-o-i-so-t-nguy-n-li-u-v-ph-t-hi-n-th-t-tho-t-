@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_text_styles.dart';
 
@@ -15,6 +16,8 @@ class AppTextField extends StatefulWidget {
     this.keyboardType,
     this.textInputAction,
     this.autofillHints,
+    this.inputFormatters,
+    this.onChanged,
     this.onSubmitted,
   });
 
@@ -27,6 +30,8 @@ class AppTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final Iterable<String>? autofillHints;
+  final List<TextInputFormatter>? inputFormatters;
+  final ValueChanged<String>? onChanged;
   final VoidCallback? onSubmitted;
 
   @override
@@ -50,6 +55,8 @@ class _AppTextFieldState extends State<AppTextField> {
           keyboardType: widget.keyboardType,
           textInputAction: widget.textInputAction,
           autofillHints: widget.autofillHints,
+          inputFormatters: widget.inputFormatters,
+          onChanged: widget.onChanged,
           autocorrect: false,
           enableSuggestions: !widget.obscure,
           onSubmitted: (_) => widget.onSubmitted?.call(),

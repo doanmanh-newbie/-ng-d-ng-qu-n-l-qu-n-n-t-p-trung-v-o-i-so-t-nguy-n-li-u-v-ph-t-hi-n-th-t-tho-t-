@@ -1,6 +1,7 @@
 import 'package:fore/core/errors/app_failure.dart';
 import 'package:fore/features/auth/domain/auth_models.dart';
 import 'package:fore/features/auth/domain/auth_repository.dart';
+import 'package:fore/features/auth/domain/staff_contact.dart';
 
 /// Bản giả của [AuthRepository] cho test: không cần mạng, không cần Supabase.
 /// Đặt `failure` để mô phỏng lỗi ở mọi lệnh gọi.
@@ -8,6 +9,9 @@ class FakeAuthRepository implements AuthRepository {
   AuthUser? user;
   Profile? profile;
   AppFailure? failure;
+
+  /// Lỗi riêng cho đăng xuất (ví dụ mất mạng lúc đăng xuất).
+  AppFailure? signOutFailure;
   Duration delay = Duration.zero;
 
   final registered = <String>{};
@@ -31,7 +35,7 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> signUp({
+  Future<bool> signUp({
     required String fullName,
     required String email,
     required String password,
@@ -41,11 +45,52 @@ class FakeAuthRepository implements AuthRepository {
     if (failure != null) throw failure!;
     if (registered.contains(email)) throw const EmailAlreadyRegisteredFailure();
     registered.add(email);
+    return false;
+  }
+
+  /// Tài khoản nhân viên đã tạo, theo `StaffContact.value`.
+  final staffAccounts = <String>{};
+  int signUpStaffCalls = 0;
+
+  @override
+  Future<AuthUser> signInStaff(StaffContact contact) async {
+    await Future<void>.delayed(delay);
+    if (failure != null) throw failure!;
+    if (!staffAccounts.contains(contact.value)) {
+      throw const StaffNotFoundFailure();
+    }
+    return user = AuthUser(
+      id: 'staff-${contact.value}',
+      email: contact.email ?? '',
+      phone: contact.phone?.substring(1) ?? '',
+    );
+  }
+
+  @override
+  Future<AuthUser> signUpStaff({
+    required StaffContact contact,
+    required String fullName,
+    required DateTime birthDate,
+  }) async {
+    signUpStaffCalls++;
+    await Future<void>.delayed(delay);
+    if (failure != null) throw failure!;
+    if (!staffAccounts.add(contact.value)) {
+      throw const StaffAlreadyExistsFailure();
+    }
+    return user = AuthUser(
+      id: 'staff-${contact.value}',
+      email: contact.email ?? '',
+      phone: contact.phone?.substring(1) ?? '',
+      displayName: fullName,
+      birthDate: birthDate.toIso8601String().substring(0, 10),
+    );
   }
 
   @override
   Future<void> signOut() async {
     signOutCalls++;
+    if (signOutFailure != null) throw signOutFailure!;
     user = null;
   }
 

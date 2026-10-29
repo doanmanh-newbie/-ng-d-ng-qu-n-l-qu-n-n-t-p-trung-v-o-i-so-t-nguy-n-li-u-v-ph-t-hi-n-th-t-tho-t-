@@ -55,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen>
     _session.addListener(_onSessionChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _reduceMotion = _reduceMotion = false;
+      _reduceMotion = MediaQuery.disableAnimationsOf(context);
       _timeline.start(reduceMotion: _reduceMotion);
       _session.restore(skipMinWait: _reduceMotion);
     });
@@ -69,12 +69,7 @@ class _SplashScreenState extends State<SplashScreen>
     } else if (state is SessionChecking) {
       _timeline.resumeLoop();
     }
-    final next = switch (state) {
-      SessionChecking() || SessionOffline() => null,
-      SessionSignedOut() => AppRoutes.welcome,
-      SessionSignedIn() => AppRoutes.home,
-      SessionNotLinked() => AppRoutes.notLinked,
-    };
+    final next = AppRoutes.routeFor(state, ownerIntent: _session.ownerIntent);
     if (next == null) return;
     _left = true;
     Navigator.of(context).pushReplacementNamed(next);
@@ -111,8 +106,8 @@ class _SplashScreenState extends State<SplashScreen>
                         timeline: _timeline,
                         offline: offline,
                         topReserve: settledTop + _logoBlockHeight + 24,
-                        onRetry: () =>
-                            _session.restore(skipMinWait: _reduceMotion),
+                        // Thử lại không cần chờ xem lại phần mở đầu.
+                        onRetry: () => _session.restore(skipMinWait: true),
                       ),
                     ),
                     _movingLogo(c.maxHeight, settledTop),

@@ -7,11 +7,13 @@ set -u
 DB=${PGDATABASE:-fore_test}
 OWNER=00000000-0000-0000-0000-0000000000a1
 psql -q -d $DB -v ON_ERROR_STOP=1 <<SQL >/dev/null
-truncate staff, ingredients, menu_items, menu_sizes, recipe_lines, areas, dining_tables, shifts, bills, bill_lines,
+truncate shops, user_settings, shop_invites, staff, ingredients, menu_items, menu_sizes, recipe_lines, areas, dining_tables, shifts, bills, bill_lines,
          purchases, stock_counts, waste_logs, stock_ledger, audit_log, pin_attempts restart identity cascade;
 delete from auth.users;
 insert into auth.users (id, email) values ('$OWNER', 'owner@test');
-insert into staff (auth_user_id, full_name, role) values ('$OWNER', 'Chủ', 'owner');
+insert into shops (id, name) values ('00000000-0000-0000-0000-0000000000f1', 'Quán test');
+insert into staff (shop_id, auth_user_id, full_name, role) values ('00000000-0000-0000-0000-0000000000f1', '$OWNER', 'Chủ', 'owner');
+select set_config('request.jwt.claim.sub', '$OWNER', false);
 insert into ingredients (name, unit, importance) values ('Sữa', 'ml', 'important');
 insert into areas (name) values ('Tầng 1');
 insert into dining_tables (area_id, name) select id, 'Bàn 1' from areas;

@@ -35,9 +35,11 @@ returns table (
   status            text          -- ok | warn | alert | no_data
 )
 language plpgsql stable security definer set search_path = public as $$
+declare v_shop uuid;
 begin
-  -- Chỉ chủ (hoặc quản trị viên database khi chạy kiểm thử trong SQL Editor)
-  if not (app_is_owner() or session_user in ('postgres', 'supabase_admin')) then
+  -- Chỉ chủ CỦA QUÁN CHỨA CA NÀY (hoặc quản trị viên database khi chạy kiểm thử trong SQL Editor)
+  select s.shop_id into v_shop from shifts s where s.id = p_shift;
+  if not ((app_is_owner() and v_shop = app_shop_id()) or session_user in ('postgres', 'supabase_admin')) then
     raise exception 'OWNER_ONLY';
   end if;
 
@@ -45,10 +47,10 @@ begin
   with sh as (select s.id, s.opened_at from shifts s where s.id = p_shift),
   prev as (
     select s.id from shifts s, sh
-     where s.status = 'closed' and s.closed_at <= sh.opened_at
+     where s.shop_id = v_shop and s.status = 'closed' and s.closed_at <= sh.opened_at
      order by s.closed_at desc limit 1
   ),
-  ing as (select i.* from ingredients i where i.active),
+  ing as (select i.* from ingredients i where i.active and i.shop_id = v_shop),
   op as (   -- tồn đầu: lần đếm 'open' của ca này, nếu không có thì lấy đếm cuối ca trước
     select i.id as iid,
            coalesce(
@@ -87,8 +89,8 @@ begin
            coalesce(th.q, 0) as theo, coalesce(wa.q, 0) as waste,
            cups.cups, cups.revenue,
            i.min_abs_qty as min_abs,
-           coalesce(i.warn_pct,  _setting(i.importance || '_warn_pct',  case i.importance when 'important' then 3 else 10 end)) as warn_at,
-           coalesce(i.alert_pct, _setting(i.importance || '_alert_pct', case i.importance when 'important' then 5 else 15 end)) as alert_at
+           coalesce(i.warn_pct,  _setting(i.importance || '_warn_pct',  case i.importance when 'important' then 3 else 10 end, v_shop)) as warn_at,
+           coalesce(i.alert_pct, _setting(i.importance || '_alert_pct', case i.importance when 'important' then 5 else 15 end, v_shop)) as alert_at
       from ing i
       join op on op.iid = i.id
       join cl on cl.iid = i.id

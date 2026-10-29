@@ -26,7 +26,7 @@ create or replace function _open_shift_id() returns uuid
 language plpgsql stable security definer set search_path = public as $$
 declare v uuid;
 begin
-  select id into v from shifts where status = 'open';
+  select id into v from shifts where status = 'open' and shop_id = app_shop_id();
   if v is null then raise exception 'NO_OPEN_SHIFT'; end if;
   return v;
 end $$;
@@ -43,7 +43,8 @@ language plpgsql security definer set search_path = public, extensions as $$
 begin
   perform _require_owner();
   if p_pin !~ '^[0-9]{4,6}$' then raise exception 'PIN_FORMAT'; end if;
-  update staff set pin_hash = crypt(p_pin, gen_salt('bf')) where id = p_staff;
+  update staff set pin_hash = crypt(p_pin, gen_salt('bf')) where id = p_staff and shop_id = app_shop_id();
+  if not found then raise exception 'NOT_FOUND'; end if;
   perform _audit('set_pin', 'staff', p_staff);
 end $$;
 
@@ -62,7 +63,7 @@ begin
   if v_fail >= v_max then result := 'PIN_LOCKED'; return; end if;
 
   select s.id into owner_id from staff s
-   where s.role = 'owner' and s.active and s.pin_hash is not null and s.pin_hash = crypt(p_pin, s.pin_hash)
+   where s.shop_id = app_shop_id() and s.role = 'owner' and s.active and s.pin_hash is not null and s.pin_hash = crypt(p_pin, s.pin_hash)
    limit 1;
   insert into pin_attempts (staff_id, ok) values (v_me, owner_id is not null);
   result := case when owner_id is null then 'WRONG_PIN' else 'OK' end;
@@ -73,6 +74,9 @@ create or replace function open_shift(p_opening_cash integer default 0) returns 
 language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_id uuid;
 begin
+  if p_opening_cash is null or p_opening_cash < 0 then
+    raise exception 'OPENING_CASH_INVALID';
+  end if;
   begin
     insert into shifts (opened_by, opening_cash) values (v_me, p_opening_cash) returning id into v_id;
   exception when unique_violation then
@@ -86,6 +90,9 @@ create or replace function close_shift(p_closing_cash integer) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_shift uuid := _open_shift_id(); v_missing int;
 begin
+  if p_closing_cash is null or p_closing_cash < 0 then
+    raise exception 'CLOSING_CASH_INVALID';
+  end if;
   -- Khóa dòng ca (FOR UPDATE) trước khi kiểm tra: open_bill giữ khóa FOR SHARE cùng dòng này,
   -- nên không thể có bill mới chen vào giữa lúc kiểm tra và lúc đóng ca.
   perform 1 from shifts where id = v_shift and status = 'open' for update;
@@ -95,7 +102,7 @@ begin
   end if;
   -- Phải đếm kho cuối ca cho mọi nguyên liệu (trừ loại chỉ kiểm theo tuần)
   select count(*) into v_missing from ingredients i
-   where i.active and not i.weekly_check
+   where i.shop_id = app_shop_id() and i.active and not i.weekly_check
      and not exists (select 1 from stock_counts c
                       where c.shift_id = v_shift and c.ingredient_id = i.id and c.kind = 'close');
   if v_missing > 0 then raise exception 'MISSING_CLOSE_COUNTS'; end if;
@@ -115,6 +122,9 @@ begin
   perform 1 from shifts where id = v_shift and status = 'open' for share;
   if not found then raise exception 'NO_OPEN_SHIFT'; end if;
   if p_type = 'dine_in' and p_table is null then raise exception 'TABLE_REQUIRED'; end if;
+  if p_table is not null and not exists (select 1 from dining_tables where id = p_table and shop_id = app_shop_id()) then
+    raise exception 'TABLE_NOT_FOUND';
+  end if;
   if p_type = 'take_away' then p_table := null; end if;
   begin
     insert into bills (shift_id, table_id, bill_type, guests, opened_by)
@@ -129,9 +139,9 @@ create or replace function add_bill_line(p_bill uuid, p_size uuid, p_qty integer
 language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_status text; v_price integer; v_id uuid;
 begin
-  select status into v_status from bills where id = p_bill for update;
+  select status into v_status from bills where id = p_bill and shop_id = app_shop_id() for update;
   if v_status is distinct from 'open' then raise exception 'BILL_NOT_OPEN'; end if;
-  select price into v_price from menu_sizes where id = p_size and active;
+  select price into v_price from menu_sizes where id = p_size and active and shop_id = app_shop_id();
   if v_price is null then raise exception 'ITEM_UNAVAILABLE'; end if;
   insert into bill_lines (bill_id, size_id, qty, unit_price, created_by)
   values (p_bill, p_size, p_qty, v_price, v_me) returning id into v_id;
@@ -143,8 +153,8 @@ language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_bill uuid; v_status text;
 begin
   if coalesce(btrim(p_reason), '') = '' then raise exception 'REASON_REQUIRED'; end if;
-  select bill_id into v_bill from bill_lines where id = p_line;
-  select status into v_status from bills where id = v_bill for update;
+  select bill_id into v_bill from bill_lines where id = p_line and shop_id = app_shop_id();
+  select status into v_status from bills where id = v_bill and shop_id = app_shop_id() for update;
   if v_status is distinct from 'open' then raise exception 'BILL_NOT_OPEN'; end if;
   update bill_lines set voided_at = now(), voided_by = v_me, void_reason = p_reason
    where id = p_line and voided_at is null;
@@ -156,7 +166,7 @@ language plpgsql security definer set search_path = public as $$
 declare v_status text; v_sub integer;
 begin
   perform _require_staff();
-  select status into v_status from bills where id = p_bill for update;
+  select status into v_status from bills where id = p_bill and shop_id = app_shop_id() for update;
   if v_status is distinct from 'open' then raise exception 'BILL_NOT_OPEN'; end if;
   select coalesce(sum(qty * unit_price), 0) into v_sub from bill_lines where bill_id = p_bill and voided_at is null;
   if p_discount < 0 or p_discount > v_sub then raise exception 'DISCOUNT_INVALID'; end if;
@@ -170,7 +180,10 @@ create or replace function pay_bill(p_bill uuid, p_method text default 'cash') r
 language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_bill bills%rowtype; v_sub integer; v_total integer; v_n integer;
 begin
-  select * into v_bill from bills where id = p_bill for update;
+  if p_method is null or p_method not in ('cash', 'transfer') then
+    raise exception 'PAYMENT_METHOD_INVALID';
+  end if;
+  select * into v_bill from bills where id = p_bill and shop_id = app_shop_id() for update;
   if not found or v_bill.status <> 'open' then raise exception 'BILL_NOT_OPEN'; end if;
 
   select coalesce(sum(qty * unit_price), 0) into v_sub from bill_lines where bill_id = p_bill and voided_at is null;
@@ -199,7 +212,7 @@ language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_status text;
 begin
   if coalesce(btrim(p_reason), '') = '' then raise exception 'REASON_REQUIRED'; end if;
-  select status into v_status from bills where id = p_bill for update;
+  select status into v_status from bills where id = p_bill and shop_id = app_shop_id() for update;
   if v_status is distinct from 'open' then raise exception 'BILL_NOT_OPEN'; end if;
   update bills set status = 'cancelled', cancelled_by = v_me, cancelled_at = now(), cancel_reason = p_reason where id = p_bill;
   perform _audit('cancel_open', 'bills', p_bill, jsonb_build_object('reason', p_reason));
@@ -212,7 +225,7 @@ language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_bill bills%rowtype; v_pin record;
 begin
   if coalesce(btrim(p_reason), '') = '' then raise exception 'REASON_REQUIRED'; end if;
-  select * into v_bill from bills where id = p_bill for update;
+  select * into v_bill from bills where id = p_bill and shop_id = app_shop_id() for update;
   if not found or v_bill.status <> 'paid' then raise exception 'BILL_NOT_PAID'; end if;
   if v_bill.shift_id <> _open_shift_id() then raise exception 'ONLY_CURRENT_SHIFT'; end if;
 
@@ -237,7 +250,7 @@ language plpgsql security definer set search_path = public as $$
 begin
   perform _require_staff();
   update bills set prep_done_at = now()
-   where id = p_bill and bill_type = 'take_away' and status <> 'cancelled' and prep_done_at is null;
+   where id = p_bill and shop_id = app_shop_id() and bill_type = 'take_away' and status <> 'cancelled' and prep_done_at is null;
 end $$;
 
 -- ---------- Kho ----------
@@ -245,6 +258,7 @@ create or replace function add_purchase(p_ingredient uuid, p_qty integer, p_late
 language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_shift uuid := _open_shift_id(); v_id uuid;
 begin
+  if not exists (select 1 from ingredients where id = p_ingredient and shop_id = app_shop_id()) then raise exception 'NOT_FOUND'; end if;
   insert into purchases (shift_id, ingredient_id, qty, is_late_entry, note, entered_by)
   values (v_shift, p_ingredient, p_qty, p_late, p_note, v_me) returning id into v_id;
   insert into stock_ledger (shift_id, ingredient_id, kind, qty_delta, ref_id, created_by)
@@ -257,6 +271,7 @@ create or replace function submit_stock_count(p_ingredient uuid, p_kind text, p_
 language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_shift uuid := _open_shift_id(); v_id uuid;
 begin
+  if not exists (select 1 from ingredients where id = p_ingredient and shop_id = app_shop_id()) then raise exception 'NOT_FOUND'; end if;
   insert into stock_counts (shift_id, ingredient_id, kind, counted_qty, counted_by)
   values (v_shift, p_ingredient, p_kind, p_qty, v_me) returning id into v_id;
   return v_id;
@@ -268,11 +283,13 @@ create or replace function add_waste(p_ingredient uuid, p_qty integer, p_type te
 language plpgsql security definer set search_path = public as $$
 declare v_me uuid := _require_staff(); v_shift uuid := _open_shift_id(); v_id uuid; v_wt waste_types;
 begin
-  select * into v_wt from waste_types where code = p_type and active;
+  select * into v_wt from waste_types where code = p_type and active and shop_id = app_shop_id();
+
   if not found then raise exception 'WASTE_TYPE_INVALID'; end if;
   if v_wt.requires_note and char_length(btrim(coalesce(p_note, ''))) < 5 then
     raise exception 'NOTE_REQUIRED';
   end if;
+  if not exists (select 1 from ingredients where id = p_ingredient and shop_id = app_shop_id()) then raise exception 'NOT_FOUND'; end if;
   insert into waste_logs (shift_id, ingredient_id, qty, reason_type, reason, entered_by)
   values (v_shift, p_ingredient, p_qty, p_type, coalesce(nullif(btrim(p_note), ''), v_wt.label_vi), v_me)
   returning id into v_id;
@@ -286,7 +303,7 @@ end $$;
 revoke all on all functions in schema public from public, anon, authenticated;
 alter default privileges in schema public revoke execute on functions from public, anon, authenticated;
 
-grant execute on function app_staff_id(), app_is_owner() to authenticated;   -- policy cần dùng
+grant execute on function app_shop_id(), app_staff_id(), app_is_owner() to authenticated;   -- policy cần dùng
 grant execute on function
   set_staff_pin(uuid, text),
   open_shift(integer), close_shift(integer),

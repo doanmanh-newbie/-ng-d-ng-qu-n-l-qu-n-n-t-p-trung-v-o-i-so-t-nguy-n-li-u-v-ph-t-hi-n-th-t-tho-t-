@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fore/features/auth/presentation/splash/splash_timeline.dart';
 
 void main() {
-  test('thời lượng mở đầu 1,8 giây, vòng lặp 2,4 giây', () {
-    expect(SplashTimeline.introDuration, const Duration(milliseconds: 1800));
+  test('thời lượng mở đầu 3,5 giây, vòng lặp 2,4 giây', () {
+    expect(SplashTimeline.introDuration, const Duration(milliseconds: 3500));
     expect(SplashTimeline.loopDuration, const Duration(milliseconds: 2400));
   });
 

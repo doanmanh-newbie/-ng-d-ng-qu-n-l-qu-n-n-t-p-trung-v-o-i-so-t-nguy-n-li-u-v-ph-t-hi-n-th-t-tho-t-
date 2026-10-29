@@ -4,14 +4,17 @@ import 'package:provider/provider.dart';
 
 import '../../../app/app_routes.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/errors/failure_messages.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../application/register_controller.dart';
+import '../application/session_controller.dart';
 
-/// Tạo tài khoản. Tạo xong CHƯA vào được quán: chủ quán phải thêm email này.
+/// Tạo tài khoản CHỦ QUÁN (email + mật khẩu). Tạo xong đi tiếp tới màn Tạo quán.
+/// Nhân viên không dùng màn này: họ tạo tài khoản bằng số điện thoại hoặc email ở `StaffRegisterScreen`.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -20,6 +23,28 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  bool _continued = false;
+
+  /// Đăng ký với vai trò chủ quán (mặc định) hay nhân viên (truyền `false` khi mở màn này).
+  bool get _asOwner => (ModalRoute.of(context)?.settings.arguments as bool?) ?? true;
+
+  /// Đăng ký xong và đã có phiên: tải hồ sơ rồi đi tiếp (chưa có quán -> Tạo quán).
+  Future<void> _continueSignedIn() async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final session = context.read<SessionController>();
+    session.ownerIntent = _asOwner;
+    final failure = await session.refreshAfterSignIn();
+    if (!mounted) return;
+    if (failure != null) {
+      _continued = false;
+      messenger.showSnackBar(SnackBar(content: Text(failure.userMessage)));
+      return;
+    }
+    final next = AppRoutes.routeFor(session.state, ownerIntent: _asOwner);
+    if (next != null) navigator.pushNamedAndRemoveUntil(next, (_) => false);
+  }
+
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
@@ -35,16 +60,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _submit() => context.read<RegisterController>().submit(
-        fullName: _name.text,
-        email: _email.text,
-        password: _password.text,
-        confirm: _confirm.text,
-      );
+    fullName: _name.text,
+    email: _email.text,
+    password: _password.text,
+    confirm: _confirm.text,
+  );
 
   @override
   Widget build(BuildContext context) {
     final c = context.watch<RegisterController>();
     if (c.status == RegisterStatus.success) {
+      if (c.signedIn) {
+        if (!_continued) {
+          _continued = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _continueSignedIn();
+          });
+        }
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      }
       return _RegisterSuccessView(email: c.registeredEmail);
     }
     return Scaffold(
@@ -55,10 +89,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Tạo tài khoản', style: AppTextStyles.screenTitle),
+              Text(_asOwner ? 'Tạo tài khoản chủ quán' : 'Tạo tài khoản nhân viên',
+                  style: AppTextStyles.screenTitle),
               const SizedBox(height: 6),
-              const Text(
-                'Dùng email cá nhân để đăng ký.',
+              Text(
+                _asOwner
+                    ? 'Dùng email của bạn để đăng ký. Sau đó bạn tạo quán và thêm nhân viên.'
+                    : 'Dùng email của bạn để đăng ký. Chủ quán sẽ mời bạn, lời mời hiện trong hộp thư.',
                 style: AppTextStyles.body,
               ),
               const SizedBox(height: 24),
@@ -146,7 +183,6 @@ class _RegisterSuccessViewState extends State<_RegisterSuccessView> {
     await Future<void>.delayed(const Duration(seconds: 2));
     if (mounted) setState(() => _copied = false);
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,10 +198,10 @@ class _RegisterSuccessViewState extends State<_RegisterSuccessView> {
                 child: Icon(Icons.check, size: 40, color: AppColors.statusOk),
               ),
               const SizedBox(height: 20),
-              const Text('Đã tạo tài khoản', style: AppTextStyles.screenTitle),
+              const Text('Kiểm tra email của bạn', style: AppTextStyles.screenTitle),
               const SizedBox(height: 8),
               const Text(
-                'Gửi email này cho chủ quán để được thêm vào quán.',
+                'Bấm vào đường dẫn trong email gửi tới địa chỉ này để xác nhận tài khoản, rồi đăng nhập bằng vai trò Chủ quán.',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.body,
               ),
@@ -200,7 +236,7 @@ class _RegisterSuccessViewState extends State<_RegisterSuccessView> {
               const Spacer(),
               FilledButton(
                 onPressed: () => Navigator.of(context)
-                    .pushNamedAndRemoveUntil(AppRoutes.login, (r) => false),
+                    .pushNamedAndRemoveUntil(AppRoutes.welcome, (r) => false),
                 child: const Text('Về màn đăng nhập'),
               ),
               const SizedBox(height: 16),

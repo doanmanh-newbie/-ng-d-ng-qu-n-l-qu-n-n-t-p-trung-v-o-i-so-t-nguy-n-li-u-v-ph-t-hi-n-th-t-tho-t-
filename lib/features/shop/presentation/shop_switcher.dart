@@ -1,0 +1,161 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../../../app/app_routes.dart';
+import '../../../core/errors/app_failure.dart';
+import '../../../core/errors/failure_messages.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../auth/application/session_controller.dart';
+import '../../shift/application/shift_controller.dart';
+import '../domain/shop_models.dart';
+import '../domain/shop_repository.dart';
+
+/// Bảng chọn quán: người làm nhiều quán chuyển qua lại; có lối "Tạo quán mới".
+Future<void> showShopSwitcher(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) => const _SwitcherSheet(),
+  );
+}
+
+class _SwitcherSheet extends StatefulWidget {
+  const _SwitcherSheet();
+
+  @override
+  State<_SwitcherSheet> createState() => _SwitcherSheetState();
+}
+
+class _SwitcherSheetState extends State<_SwitcherSheet> {
+  List<ShopMembership>? _shops;
+  String? _error;
+  String? _switching;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final shops = await context.read<ShopRepository>().myShops();
+      if (mounted) setState(() => _shops = shops);
+    } on AppFailure catch (f) {
+      if (mounted) setState(() => _error = f.userMessage);
+    }
+  }
+
+  Future<void> _select(ShopMembership shop) async {
+    if (shop.isCurrent || _switching != null) return;
+    final repo = context.read<ShopRepository>();
+    final session = context.read<SessionController>();
+    final shift = context.read<ShiftController>();
+    final navigator = Navigator.of(context);
+    setState(() {
+      _switching = shop.shopId;
+      _error = null;
+    });
+    try {
+      await repo.selectShop(shop.shopId);
+      final failure = await session.refreshAfterSignIn();
+      if (failure != null) throw failure;
+      shift.load();
+      HapticFeedback.selectionClick();
+      if (!mounted) return;
+      navigator.pop();
+      // Về Trang chủ của quán mới (làm mới toàn bộ màn hình theo quán).
+      navigator.pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
+    } on AppFailure catch (f) {
+      if (mounted) {
+        setState(() {
+          _error = f.userMessage;
+          _switching = null;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shops = _shops;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Quán của tôi', style: AppTextStyles.heading),
+            const SizedBox(height: 12),
+            if (shops == null && _error == null)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            if (shops != null)
+              for (final s in shops)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      color: AppColors.tint,
+                      shape: BoxShape.circle,
+                    ),
+                    child: SizedBox.square(
+                      dimension: 42,
+                      child: Icon(
+                        s.isOwner
+                            ? Icons.storefront_outlined
+                            : Icons.badge_outlined,
+                        color: AppColors.brand,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  title: Text(s.shopName,
+                      style: AppTextStyles.label.copyWith(fontSize: 16)),
+                  subtitle: Text(
+                    '${s.isOwner ? 'Chủ quán' : 'Nhân viên'} · ${s.displayName}',
+                    style: AppTextStyles.caption,
+                  ),
+                  trailing: _switching == s.shopId
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : s.isCurrent
+                          ? const Icon(Icons.check_circle,
+                              color: AppColors.statusOk)
+                          : const Icon(Icons.chevron_right,
+                              color: AppColors.inkMuted),
+                  onTap: () => _select(s),
+                ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(_error!,
+                    style: const TextStyle(
+                        color: AppColors.statusOff, fontSize: 13)),
+              ),
+            const Divider(height: 24),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(AppRoutes.createShop);
+              },
+              icon: const Icon(Icons.add_business_outlined),
+              label: const Text('Tạo quán mới'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

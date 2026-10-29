@@ -17,7 +17,7 @@ select w.shift_id, w.entered_at, i.name as ingredient_name, i.unit,
        s.full_name as entered_by_name
   from waste_logs w
   join ingredients i on i.id = w.ingredient_id
-  join waste_types t on t.code = w.reason_type
+  join waste_types t on t.code = w.reason_type and t.shop_id = w.shop_id
   left join staff s on s.id = w.entered_by;
 grant select on v_waste_detail to authenticated;
 
@@ -39,11 +39,14 @@ returns table (
   flag              text       -- ok | warn
 )
 language plpgsql stable security definer set search_path = public as $$
-declare v_warn int := _setting('waste_warn_pct', 10);
+declare v_shop uuid; v_warn int;
 begin
-  if not (app_is_owner() or session_user in ('postgres', 'supabase_admin')) then
+  -- Chỉ chủ CỦA QUÁN CHỨA CA NÀY (hoặc quản trị viên database khi chạy kiểm thử trong SQL Editor)
+  select s.shop_id into v_shop from shifts s where s.id = p_shift;
+  if not ((app_is_owner() and v_shop = app_shop_id()) or session_user in ('postgres', 'supabase_admin')) then
     raise exception 'OWNER_ONLY';
   end if;
+  v_warn := _setting('waste_warn_pct', 10, v_shop);
 
   return query
   with w as (
@@ -70,7 +73,7 @@ begin
     from w
     join tot on tot.iid = w.iid
     join ingredients i on i.id = w.iid
-    join waste_types t on t.code = w.rtype
+    join waste_types t on t.code = w.rtype and t.shop_id = v_shop
     left join th on th.iid = w.iid
    order by (case when coalesce(th.q, 0) = 0 or tot.q * 100.0 / th.q >= v_warn then 0 else 1 end),
             i.name, t.sort_order;

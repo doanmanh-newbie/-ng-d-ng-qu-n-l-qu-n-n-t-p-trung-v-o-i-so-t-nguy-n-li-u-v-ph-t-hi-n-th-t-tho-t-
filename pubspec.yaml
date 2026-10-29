@@ -23,3 +23,30 @@ flutter:
 
   assets:
     - assets/splash/
+    - assets/icons/
+    - assets/owner_dashboard/file1/
+    - assets/owner_dashboard/file2/
+    - assets/owner_dashboard/file3/
+    - assets/owner_dashboard/file4/
+    - assets/owner_dashboard/file5/
+    - assets/owner_dashboard/file6/
+    - assets/owner_dashboard/file7/
+    - assets/owner_dashboard/file8/
+    - assets/owner_dashboard/file9/
+    - assets/owner_dashboard/file10/
+
+  fonts:
+    - family: BeVietnamPro
+      fonts:
+        - asset: assets/fonts/BeVietnamPro-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/BeVietnamPro-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/BeVietnamPro-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BeVietnamPro-Bold.ttf
+          weight: 700
+    - family: PlayfairDisplay
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
+          weight: 700

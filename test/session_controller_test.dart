@@ -38,16 +38,16 @@ void main() {
     expect(c.state, isA<SessionSignedIn>());
   });
 
-  test('đăng nhập được nhưng chưa có hồ sơ -> SessionNotLinked', () async {
+  test('đăng nhập được nhưng chưa có hồ sơ -> SessionNoShop', () async {
     repo.user = const AuthUser(id: 'u1', email: 'an@quan.vn');
     final c = build();
     await c.restore();
     final state = c.state;
-    expect(state, isA<SessionNotLinked>());
-    expect((state as SessionNotLinked).email, 'an@quan.vn');
+    expect(state, isA<SessionNoShop>());
+    expect((state as SessionNoShop).contact, 'an@quan.vn');
   });
 
-  test('hồ sơ đã bị tắt (active=false) cũng coi là chưa được thêm', () async {
+  test('hồ sơ đã bị tắt (active=false) cũng coi là chưa thuộc quán', () async {
     repo.user = const AuthUser(id: 'u1', email: 'an@quan.vn');
     repo.profile = const Profile(
       staffId: 's1',
@@ -58,7 +58,15 @@ void main() {
     );
     final c = build();
     await c.restore();
-    expect(c.state, isA<SessionNotLinked>());
+    final state = c.state;
+    expect(state, isA<SessionNoShop>());
+  });
+
+  test('đăng nhập bằng số điện thoại: contact là số có dấu +', () async {
+    repo.user = const AuthUser(id: 'u1', phone: '84901234567');
+    final c = build();
+    await c.restore();
+    expect((c.state as SessionNoShop).contact, '+84901234567');
   });
 
   test('mất mạng -> SessionOffline, thử lại được', () async {
@@ -94,8 +102,50 @@ void main() {
     repo.profile = profile;
     final c = build();
     await c.restore();
-    await c.signOut();
+    expect(await c.signOut(), isNull);
     expect(c.state, isA<SessionSignedOut>());
     expect(repo.signOutCalls, 1);
+  });
+
+  group('refreshAfterSignIn', () {
+    test('thành công -> null và cập nhật trạng thái', () async {
+      repo.user = const AuthUser(id: 'u1', email: 'an@quan.vn');
+      repo.profile = profile;
+      final c = build();
+      final failure = await c.refreshAfterSignIn();
+      expect(failure, isNull);
+      expect(c.state, isA<SessionSignedIn>());
+    });
+
+    test('mất mạng -> trả lỗi, giữ nguyên trạng thái cũ', () async {
+      repo.user = const AuthUser(id: 'u1', email: 'an@quan.vn');
+      final c = build();
+      await c.restore();
+      expect(c.state, isA<SessionNoShop>());
+
+      repo.failure = const NoNetworkFailure();
+      final failure = await c.refreshAfterSignIn();
+      expect(failure, isA<NoNetworkFailure>());
+      expect(c.state, isA<SessionNoShop>());
+    });
+
+    test('lỗi lạ cũng được trả về, không văng ra ngoài', () async {
+      repo.user = const AuthUser(id: 'u1', email: 'an@quan.vn');
+      repo.failure = UnknownFailure('hỏng');
+      final c = build();
+      final failure = await c.refreshAfterSignIn();
+      expect(failure, isA<UnknownFailure>());
+    });
+  });
+
+  test('signOut lỗi (mất mạng) -> trả lỗi, vẫn ở trạng thái cũ', () async {
+    repo.user = const AuthUser(id: 'u1', email: 'an@quan.vn');
+    repo.profile = profile;
+    final c = build();
+    await c.restore();
+    repo.signOutFailure = const NoNetworkFailure();
+    final failure = await c.signOut();
+    expect(failure, isA<NoNetworkFailure>());
+    expect(c.state, isA<SessionSignedIn>());
   });
 }

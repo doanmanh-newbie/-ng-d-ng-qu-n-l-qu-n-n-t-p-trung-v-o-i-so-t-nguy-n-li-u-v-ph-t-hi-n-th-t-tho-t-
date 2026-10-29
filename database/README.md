@@ -16,12 +16,22 @@ Mở **SQL Editor** của dự án Supabase, dán và chạy lần lượt (đú
 | `007_corrections.sql` | Sửa nhập nhầm bằng dòng **điều chỉnh** (dòng gốc vẫn còn), chỉ chủ làm |
 | `008_staff_setup.sql` | Tạo chủ đầu tiên, nối tài khoản nhân viên |
 | `009_shift_report.sql` | `shift_report(ca)`: MỘT hàm trả khối JSON cho màn hình chủ (nguyên liệu, tiền, hao hụt, thu/chi, cờ, trạng thái chung) + cờ **xu hướng** (nhiều ca liên tiếp lệch cùng chiều) |
+| `010_current_shift.sql` | API ca đang mở cho toàn bộ nhân viên; không trả tiền đầu ca |
+| `011_app_read_api.sql` | API đọc cho giao diện bán hàng, kiểm kê và kho. Các hàm lọc theo `app_shop_id()`; giữ nguyên `current_shift()` và luồng nhiều quán hiện có |
+| `012_owner_dashboard.sql` | API tổng quan dành riêng cho chủ quán; doanh thu và báo cáo chỉ trả khi `app_is_owner()` đúng |
+| `013_staff_birth_date.sql` | Lưu ngày sinh nhân viên và đồng bộ hồ sơ khi chấp nhận lời mời |
+| `014_invite_phone_or_email.sql` | Cho phép chủ gửi lời mời bằng số điện thoại, email hoặc cả hai |
+| `015_simple_staff_login.sql` | **Chỉ để thử:** nhân viên đăng nhập chỉ bằng số điện thoại hoặc email, không OTP. Số điện thoại đăng ký bằng email giả `p84901234567@phone.fore-staff.app`, database nhận ra và vẫn khớp lời mời theo số |
+| `016_audit_actor_same_shop.sql` | Sửa nhật ký khi một người thuộc nhiều quán: người đã ở quán A tạo quán B hoặc nhận lời mời vào quán B không còn bị khóa ngoại của `audit_log` chặn |
 | `sim/sim_data.sql` | **Dữ liệu MÔ PHỎNG** 30 ngày có gian lận cài sẵn (chỉ chạy trên database thử, không phải database quán thật) |
+| `dev/seed_owner_dashboard.sql` | Tạo quán demo riêng, menu, tồn kho, bill, 3 ca đóng + 1 ca mở và lời mời để xem dashboard chủ quán (project thử) |
 | `sim/evaluate_simulation.sql` | Đo tỉ lệ phát hiện / báo nhầm trên dữ liệu mô phỏng, dùng cho báo cáo |
 | `sim/evaluate_noise_reduction.sql` | So sánh cách "để ý" cũ (mọi vàng/đỏ) với cách mới (đỏ hoặc có cờ xu hướng) trên dữ liệu mô phỏng |
 | `dev/reset_schema.sql` | NGUY HIỂM: xóa sạch toàn bộ bảng/hàm của Fore trong schema `public` để chạy lại từ `001` (CHỈ project Supabase thử) |
 | `dev/reset_all.sql` | NGUY HIỂM: xóa sạch dữ liệu để làm lại (dọn dữ liệu mô phỏng) |
 | `tests/` | Kiểm thử chạy trên PostgreSQL thường (không dùng trên Supabase) |
+
+> **Nếu gặp `relation "shops" does not exist`:** database đang dùng schema cũ hoặc chưa chạy `001_tables.sql`. `012_owner_dashboard.sql` không chạy độc lập; nó cần các bảng multi-shop được tạo từ `001` đến `011`. Trên project thử, chạy `dev/reset_schema.sql` một lần rồi chạy lần lượt `001_tables.sql` → `016_audit_actor_same_shop.sql`. Reset này xóa toàn bộ schema `public` và dữ liệu Fore trong đó; tài khoản Supabase Auth vẫn còn. Không chạy trên database có dữ liệu cần giữ.
 
 ## Công thức đối soát (chỉ viết ở database)
 - Thực dùng = tồn đầu + nhập − tồn cuối (nhân viên đếm mù)
@@ -106,7 +116,7 @@ Bộ `sim/` mô phỏng 30 ngày (ngày bắt đầu **cố định**, nên ch�
 
 ## Giới hạn thiết kế đã biết (chủ động chọn)
 
-- **Một quán = một dự án Supabase (single-tenant).** Không có cột `shop_id`; ngay cả `one_open_shift` (chỉ một ca mở) cũng ngầm hiểu một quán. Bán cho nhiều quán: mỗi quán một dự án, chạy cùng bộ SQL. Chỉ khi có hàng chục quán mới cần đa quán trong một database (thêm `shop_id` vào ~15 bảng và viết lại RLS).
+- **Nhiều quán trong một dự án Supabase (multi-tenant).** Các bảng nghiệp vụ có `shop_id`; RLS, RPC và khóa ghép cùng quán cô lập dữ liệu giữa các quán. Mỗi quán chỉ có tối đa một ca mở.
 - **Công thức đã bán thì khóa** (`RECIPE_IN_USE`) để số ly và tiền ước tính của ca cũ không bị đổi. Số lý thuyết đối soát vốn đã cố định trong sổ kho lúc thanh toán.
 - **Đóng ca / mở bill có khóa dòng ca**: `close_shift` khóa `FOR UPDATE`, `open_bill` khóa `FOR SHARE` và kiểm tra lại ca còn mở, nên không còn bill mở nằm trong ca đã đóng (có test `51_concurrency.sh`, bản cũ không khóa làm test này báo SAI).
 - **PIN chủ băm bằng bcrypt trong database** (`crypt`): chỉ chạy khi hủy bill đã thanh toán hoặc đặt PIN (vài lần mỗi ca), không phải mỗi lần đăng nhập (đăng nhập dùng Supabase Auth), nên không gây nghẽn. Khóa sau 3 lần sai trong 15 phút (cấu hình được).
@@ -116,7 +126,7 @@ Bộ `sim/` mô phỏng 30 ngày (ngày bắt đầu **cố định**, nên ch�
 1. **Đếm mù được ép ở database:** nhân viên không đọc được sổ kho, kiểm kê, tồn dự kiến. Màn "Còn pha được" và kết quả đối soát chỉ hiện cho tài khoản chủ.
 2. **Chỉ thêm, không sửa:** sổ kho, kiểm kê, nhập, hao hụt, nhật ký bị trigger chặn sửa/xóa kể cả quản trị viên. Chỉ `TRUNCATE` bằng quyền quản trị mới xóa được (dùng cho `dev/reset_all.sql`).
 3. **Đăng nhập:** mỗi nhân sự dùng một tài khoản Supabase Auth, ghép với bảng `staff` qua `auth_user_id`. PIN chủ chỉ dùng để xác nhận hủy bill đã thu tiền. Không đưa `service_role` key vào app.
-4. **Chỉ một quán:** chưa có bảng `shops`. Muốn bán cho nhiều quán sau này phải thêm `shop_id` vào các bảng và policy.
+4. **Nhiều quán:** mọi dữ liệu nghiệp vụ đều được cô lập bằng `shop_id`; khóa ghép cùng quán bảo vệ các quan hệ chính.
 5. Bản mô phỏng và kết quả đo chỉ chứng minh logic hoạt động trên dữ liệu giả lập; phải chạy thử ở quán thật để chỉnh ngưỡng.
 
 ## Chạy kiểm thử trên máy (Postgres thường)
@@ -124,12 +134,14 @@ Bộ `sim/` mô phỏng 30 ngày (ngày bắt đầu **cố định**, nên ch�
 createdb fore_test
 psql -d fore_test -f tests/00_supabase_stub.sql   # giả lập role/auth của Supabase
 psql -d fore_test -f 001_tables.sql -f 002_rules.sql -f 003_actions.sql -f 004_reconcile.sql \
-                   -f 005_cash_reconcile.sql -f 006_waste_report.sql -f 007_corrections.sql -f 008_staff_setup.sql -f 009_shift_report.sql
+                   -f 005_cash_reconcile.sql -f 006_waste_report.sql -f 007_corrections.sql -f 008_staff_setup.sql -f 009_shift_report.sql -f 010_current_shift.sql -f 011_app_read_api.sql -f 012_owner_dashboard.sql -f 013_staff_birth_date.sql -f 014_invite_phone_or_email.sql -f 015_simple_staff_login.sql -f 016_audit_actor_same_shop.sql
 psql -d fore_test -f tests/10_reconcile_exercises.sql   # đối soát nguyên liệu: phải in "TẤT CẢ KIỂM THỬ ĐỀU ĐÚNG"
 psql -d fore_test -f tests/20_cash_exercises.sql        # đối soát tiền mặt: phải in "TIEN MAT: TAT CA DEU DUNG"
 psql -d fore_test -f tests/30_config_waste_exercises.sql # cấu hình + hao hụt: phải in "CAU HINH + HAO HUT: TAT CA DEU DUNG"
 psql -d fore_test -f tests/40_shift_report_exercises.sql # shift_report + cờ xu hướng: phải in "SHIFT REPORT: TAT CA DEU DUNG"
 psql -d fore_test -f tests/50_hardening_exercises.sql    # chặn sửa công thức đã bán + đóng/mở ca: phải in "HARDENING: TAT CA DEU DUNG"
+psql -d fore_test -f tests/60_current_shift_exercises.sql # xem ca đang mở: phải in "CURRENT SHIFT: TAT CA DEU DUNG"
+psql -d fore_test -f tests/70_multishop_exercises.sql # cô lập dữ liệu và chặn liên kết chéo quán: phải in "SMOKE: DUNG"
 bash tests/51_concurrency.sh                              # 2 phiên song song: mở bill lúc đóng ca: phải in "CONCURRENCY: DUNG"
 psql -d fore_test -f sim/sim_data.sql -f sim/evaluate_simulation.sql -f sim/evaluate_noise_reduction.sql
 ```

@@ -35,9 +35,88 @@ class EmailNotConfirmedFailure extends AppFailure {
   const EmailNotConfirmedFailure() : super('EMAIL_NOT_CONFIRMED');
 }
 
+/// Có người khác vừa mở ca (cả quán chỉ có một ca mở tại một thời điểm).
+class ShiftAlreadyOpenFailure extends AppFailure {
+  const ShiftAlreadyOpenFailure() : super('SHIFT_ALREADY_OPEN');
+}
+
+/// Số điện thoại không hợp lệ.
+class InvalidPhoneFailure extends AppFailure {
+  const InvalidPhoneFailure() : super('PHONE_INVALID');
+}
+
+/// Người này đã là thành viên của quán.
+class AlreadyMemberFailure extends AppFailure {
+  const AlreadyMemberFailure() : super('ALREADY_MEMBER');
+}
+
+/// Số này đã được mời và đang chờ trả lời.
+class AlreadyInvitedFailure extends AppFailure {
+  const AlreadyInvitedFailure() : super('ALREADY_INVITED');
+}
+
+/// Lời mời không còn (đã bị hủy, đã xử lý, hoặc không gửi cho mình).
+class InviteNotFoundFailure extends AppFailure {
+  const InviteNotFoundFailure() : super('INVITE_NOT_FOUND');
+}
+
+/// Việc này chỉ chủ quán làm được.
+class OwnerOnlyFailure extends AppFailure {
+  const OwnerOnlyFailure() : super('OWNER_ONLY');
+}
+
+/// Mã xác nhận (OTP) sai hoặc hết hạn.
+class InvalidOtpFailure extends AppFailure {
+  const InvalidOtpFailure() : super('OTP_INVALID');
+}
+
+/// Gửi mã quá nhiều lần trong thời gian ngắn.
+class TooManyRequestsFailure extends AppFailure {
+  const TooManyRequestsFailure() : super('TOO_MANY_REQUESTS');
+}
+
+/// Không gửi được mã xác nhận (chưa bật nhà cung cấp SMS, số không nhận được...).
+class OtpSendFailure extends AppFailure {
+  const OtpSendFailure() : super('OTP_SEND_FAILED');
+}
+
+/// Đăng nhập nhân viên: số/email này chưa có tài khoản.
+class StaffNotFoundFailure extends AppFailure {
+  const StaffNotFoundFailure() : super('STAFF_NOT_FOUND');
+}
+
+/// Tạo tài khoản nhân viên: số/email này đã có tài khoản.
+class StaffAlreadyExistsFailure extends AppFailure {
+  const StaffAlreadyExistsFailure() : super('STAFF_ALREADY_EXISTS');
+}
+
+/// Supabase đang bật "Confirm email" nên đăng ký xong chưa vào được ngay (lỗi cấu hình khi thử).
+class EmailConfirmRequiredFailure extends AppFailure {
+  const EmailConfirmRequiredFailure() : super('EMAIL_CONFIRM_REQUIRED');
+}
+
+/// Supabase từ chối email giả của số điện thoại (tên miền bị coi là không hợp lệ). Chỉ gặp khi thử.
+class PhoneLoginDomainRejectedFailure extends AppFailure {
+  const PhoneLoginDomainRejectedFailure() : super('PHONE_LOGIN_DOMAIN_REJECTED');
+}
+
 class UnknownFailure extends AppFailure {
   const UnknownFailure([this.detail]) : super('UNKNOWN');
 
   /// Chi tiết kỹ thuật để ghi log, không hiện cho người dùng.
   final Object? detail;
+}
+
+class SessionExpiredFailure extends AppFailure {
+  const SessionExpiredFailure() : super('SESSION_EXPIRED');
+}
+
+class DatabaseFailure extends AppFailure {
+  const DatabaseFailure(super.code);
+}
+
+class MissingRpcFailure extends AppFailure {
+  const MissingRpcFailure(this.rpcName) : super('RPC_MISSING');
+
+  final String rpcName;
 }

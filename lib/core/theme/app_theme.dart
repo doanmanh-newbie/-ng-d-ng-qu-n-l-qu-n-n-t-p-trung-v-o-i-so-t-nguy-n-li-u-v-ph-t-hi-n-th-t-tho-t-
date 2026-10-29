@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_text_styles.dart';
 
 /// Kích thước dùng chung, khớp bản thiết kế: lề 16, bo góc 12, nút cao 48.
 abstract final class AppSizes {
   static const pagePadding = 16.0;
   static const radius = 12.0;
   static const controlHeight = 48.0;
+  static const radiusCard = 22.0;
+  static const radiusTile = 16.0;
 }
 
 abstract final class AppTheme {
@@ -29,7 +32,9 @@ abstract final class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.background,
+      fontFamily: AppFonts.body,
       textTheme: Typography.blackMountainView.apply(
+        fontFamily: AppFonts.body,
         bodyColor: AppColors.textPrimary,
         displayColor: AppColors.textPrimary,
       ),
@@ -67,6 +72,28 @@ abstract final class AppTheme {
         style: TextButton.styleFrom(
           minimumSize: const Size(48, AppSizes.controlHeight),
           foregroundColor: AppColors.brand,
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 68,
+        backgroundColor: AppColors.surface,
+        indicatorColor: const Color(0xFFDDF1EF),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+              fontFamily: AppFonts.body,
+              fontSize: 11,
+              fontWeight: states.contains(WidgetState.selected)
+                  ? FontWeight.w700
+                  : FontWeight.w500,
+              color: AppColors.brand,
+            )),
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.surface,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFE7EFEC)),
         ),
       ),
     );

@@ -22,7 +22,8 @@
 create or replace function shift_report(p_shift uuid) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare
-  v_n           int := greatest(_setting('streak_shifts', 3), 2);
+  v_n           int;
+  v_shop        uuid;
   v_opened      timestamptz;
   v_map         jsonb := '{}'::jsonb;      -- mã nguyên liệu -> {"n": số ca liên tiếp, "sign": chiều lệch, "alive": còn đang nối}
   v_seen        text[];
@@ -48,11 +49,13 @@ declare
   v_overall     text;
   v_shift       jsonb;
 begin
-  if not (app_is_owner() or session_user in ('postgres', 'supabase_admin')) then
+  select s.shop_id into v_shop from shifts s where s.id = p_shift;
+  if not ((app_is_owner() and v_shop = app_shop_id()) or session_user in ('postgres', 'supabase_admin')) then
     raise exception 'OWNER_ONLY';
   end if;
   select opened_at into v_opened from shifts where id = p_shift;
   if v_opened is null then raise exception 'NOT_FOUND'; end if;
+  v_n := greatest(_setting('streak_shifts', 3, v_shop), 2);
 
   -- reconcile_shift là hàm nặng nhất: gọi đúng 1 lần cho ca đang xem rồi giữ kết quả trong v_cur
   select coalesce(jsonb_agg(to_jsonb(x)), '[]'::jsonb) into v_cur from reconcile_shift(p_shift) x;
@@ -67,7 +70,7 @@ begin
 
   -- (2) Lùi về các ca đã đóng trước đó (tối đa streak_shifts - 1 ca), nối chuỗi nếu vẫn lệch cùng chiều
   for v_prev in
-    select id from shifts where status = 'closed' and opened_at < v_opened
+    select id from shifts where shop_id = v_shop and status = 'closed' and opened_at < v_opened
      order by opened_at desc limit v_n - 1
   loop
     v_seen := '{}';
@@ -119,7 +122,10 @@ begin
   -- (6) Các khoản thu/chi và nhắc việc
   select coalesce(jsonb_agg(to_jsonb(m) order by m.entered_at), '[]'::jsonb) into v_moves
     from v_cash_movements m where m.shift_id = p_shift;
-  select count(*) into v_missing from v_items_without_recipe;
+  select count(*) into v_missing
+    from menu_sizes ms join menu_items mi on mi.id = ms.item_id
+   where ms.shop_id = v_shop and ms.active and mi.active
+     and not exists (select 1 from recipe_lines rl where rl.size_id = ms.id);
 
   v_overall := case when not v_has_data then 'no_data'
                     when v_rank >= 2 then 'alert'

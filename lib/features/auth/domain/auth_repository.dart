@@ -1,4 +1,5 @@
 import 'auth_models.dart';
+import 'staff_contact.dart';
 
 /// Hợp đồng truy cập tài khoản. Controller và màn hình chỉ biết lớp này,
 /// không biết Supabase. Nhờ vậy:
@@ -12,11 +13,25 @@ abstract interface class AuthRepository {
 
   Future<AuthUser> signIn({required String email, required String password});
 
-  /// Tạo tài khoản. Không vào được quán ngay: chủ quán phải thêm email này.
-  Future<void> signUp({
+  /// Tạo tài khoản chủ quán (email + mật khẩu). Trả về `true` nếu đã đăng nhập luôn
+  /// (Supabase tắt xác nhận email), `false` nếu phải xác nhận email rồi mới đăng nhập.
+  Future<bool> signUp({
     required String fullName,
     required String email,
     required String password,
+  });
+
+  /// Đăng nhập nhân viên chỉ bằng số điện thoại hoặc email (xem `StaffCredentials`).
+  /// Chưa có tài khoản thì ném `StaffNotFoundFailure`.
+  Future<AuthUser> signInStaff(StaffContact contact);
+
+  /// Tạo tài khoản nhân viên và đăng nhập luôn. Tên và ngày sinh được lưu vào tài khoản
+  /// và chép sang hồ sơ trong quán khi nhân viên chấp nhận lời mời.
+  /// Đã có tài khoản thì ném `StaffAlreadyExistsFailure`.
+  Future<AuthUser> signUpStaff({
+    required StaffContact contact,
+    required String fullName,
+    required DateTime birthDate,
   });
 
   Future<void> signOut();

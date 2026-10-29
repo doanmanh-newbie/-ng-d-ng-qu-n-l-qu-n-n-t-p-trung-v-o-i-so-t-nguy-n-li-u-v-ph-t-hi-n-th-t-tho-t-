@@ -5,14 +5,24 @@ import '../core/theme/app_theme.dart';
 import '../features/auth/application/session_controller.dart';
 import '../features/auth/domain/auth_repository.dart';
 import '../features/auth/presentation/splash_screen.dart';
+import '../features/shift/application/shift_controller.dart';
+import '../features/shift/domain/shift_repository.dart';
+import '../features/shop/domain/shop_repository.dart';
 import 'app_routes.dart';
 
-/// Gốc của app. Nhận [AuthRepository] từ ngoài vào (dependency injection):
+/// Gốc của app. Nhận các repository từ ngoài vào (dependency injection):
 /// `main.dart` truyền bản Supabase, test truyền bản giả.
 class ForeApp extends StatelessWidget {
-  const ForeApp({super.key, required this.authRepository});
+  const ForeApp({
+    super.key,
+    required this.authRepository,
+    required this.shiftRepository,
+    required this.shopRepository,
+  });
 
   final AuthRepository authRepository;
+  final ShiftRepository shiftRepository;
+  final ShopRepository shopRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +32,13 @@ class ForeApp extends StatelessWidget {
         ChangeNotifierProvider<SessionController>(
           create: (_) => SessionController(
             authRepository,
-            minVisible: const Duration(seconds: 5),
+            minVisible: SplashScreen.introDuration,
           ),
+        ),
+        Provider<ShiftRepository>.value(value: shiftRepository),
+        Provider<ShopRepository>.value(value: shopRepository),
+        ChangeNotifierProvider<ShiftController>(
+          create: (_) => ShiftController(shiftRepository),
         ),
       ],
       child: MaterialApp(

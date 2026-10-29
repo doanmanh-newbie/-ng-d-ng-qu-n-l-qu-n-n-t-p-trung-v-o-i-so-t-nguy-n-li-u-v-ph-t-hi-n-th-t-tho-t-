@@ -28,6 +28,7 @@
 --   in  = bỏ thêm vào két (+): đổi tiền lẻ, chủ nạp...             -> ghi chú không bắt buộc
 create table cash_movements (
   id          uuid primary key default gen_random_uuid(),
+  shop_id     uuid not null default app_shop_id() references shops(id),
   shift_id    uuid not null references shifts(id),
   direction   text not null check (direction in ('in', 'out')),
   amount      integer not null check (amount > 0),
@@ -35,14 +36,18 @@ create table cash_movements (
   entered_by  uuid not null references staff(id),
   entered_at  timestamptz not null default now(),
   constraint note_required_when_taking_out
-    check (direction = 'in' or char_length(btrim(coalesce(note, ''))) >= 3)
+    check (direction = 'in' or char_length(btrim(coalesce(note, ''))) >= 3),
+  constraint cash_movements_shift_same_shop_fk
+    foreign key (shop_id, shift_id) references shifts (shop_id, id),
+  constraint cash_movements_entered_by_same_shop_fk
+    foreign key (shop_id, entered_by) references staff (shop_id, id)
 );
 create index cash_movements_shift on cash_movements (shift_id);
 create trigger no_change_cash_movements before update or delete on cash_movements
   for each row execute function prevent_mutation();                    -- chỉ thêm, không sửa/xóa
 alter table cash_movements enable row level security;
 grant select on cash_movements to authenticated;
-create policy cash_movements_owner_read on cash_movements for select to authenticated using (app_is_owner());
+create policy cash_movements_owner_read on cash_movements for select to authenticated using (shop_id = (select app_shop_id()) and (select app_is_owner()));
 
 -- Nhân viên hoặc chủ đều ghi được (không cần PIN). Chỉ ghi vào ca đang mở.
 -- Việc ghi không bắt buộc (ca không có thu/chi thì không có dòng nào).
@@ -90,8 +95,11 @@ returns table (
   status                      text          -- ok | warn | alert | no_data
 )
 language plpgsql stable security definer set search_path = public as $$
+declare v_shop uuid;
 begin
-  if not (app_is_owner() or session_user in ('postgres', 'supabase_admin')) then
+  -- Chỉ chủ CỦA QUÁN CHỨA CA NÀY (hoặc quản trị viên database khi chạy kiểm thử trong SQL Editor)
+  select s.shop_id into v_shop from shifts s where s.id = p_shift;
+  if not ((app_is_owner() and v_shop = app_shop_id()) or session_user in ('postgres', 'supabase_admin')) then
     raise exception 'OWNER_ONLY';
   end if;
 
@@ -100,7 +108,7 @@ begin
   prev as (   -- ca đã đóng gần nhất trước ca này
     select p.closing_cash
       from shifts p, sh
-     where p.status = 'closed' and p.closed_at < sh.opened_at and p.closing_cash is not null
+     where p.shop_id = v_shop and p.status = 'closed' and p.closed_at < sh.opened_at and p.closing_cash is not null
      order by p.closed_at desc limit 1
   ),
   sales as (
@@ -121,8 +129,8 @@ begin
            sales.cash, sales.transfer, sales.canc_n, sales.canc_amt,
            mv.cin, mv.cout,
            sh.opening_cash + sales.cash + mv.cin - mv.cout as expected,
-           _setting('cash_warn_vnd',  20000) as warn_at,
-           _setting('cash_alert_vnd', 50000) as alert_at
+           _setting('cash_warn_vnd',  20000, v_shop) as warn_at,
+           _setting('cash_alert_vnd', 50000, v_shop) as alert_at
       from sh, sales, mv
   )
   select b.id, b.opened_at, b.closed_at, b.opening_cash,

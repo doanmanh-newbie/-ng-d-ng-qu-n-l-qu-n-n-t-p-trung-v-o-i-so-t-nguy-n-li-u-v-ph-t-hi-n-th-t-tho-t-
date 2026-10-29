@@ -1,0 +1,65 @@
+import 'package:fore/core/errors/app_failure.dart';
+import 'package:fore/features/shop/domain/shop_models.dart';
+import 'package:fore/features/shop/domain/shop_repository.dart';
+
+/// Bản giả của [ShopRepository] cho test.
+class FakeShopRepository implements ShopRepository {
+  List<ShopMembership> shops = [];
+  List<Invite> invites = [];
+  List<TeamMember> members = [];
+  List<PendingInvite> pending = [];
+  AppFailure? failure;
+
+  @override
+  Future<void> createShop(
+      {required String shopName, required String ownerName}) async {
+    if (failure != null) throw failure!;
+  }
+
+  @override
+  Future<List<ShopMembership>> myShops() async {
+    if (failure != null) throw failure!;
+    return shops;
+  }
+
+  @override
+  Future<void> selectShop(String shopId) async {
+    if (failure != null) throw failure!;
+  }
+
+  @override
+  Future<List<Invite>> myInvites() async {
+    if (failure != null) throw failure!;
+    return invites;
+  }
+
+  @override
+  Future<void> acceptInvite(String inviteId) async {
+    if (failure != null) throw failure!;
+    invites = invites.where((i) => i.id != inviteId).toList();
+  }
+
+  @override
+  Future<void> declineInvite(String inviteId) async {
+    if (failure != null) throw failure!;
+    invites = invites.where((i) => i.id != inviteId).toList();
+  }
+
+  @override
+  Future<List<TeamMember>> team() async => members;
+
+  @override
+  Future<List<PendingInvite>> pendingInvites() async => pending;
+
+  @override
+  Future<void> inviteStaff({
+    String? phone,
+    required String fullName,
+    String? email,
+  }) async {
+    if (failure != null) throw failure!;
+  }
+
+  @override
+  Future<void> cancelInvite(String inviteId) async {}
+}

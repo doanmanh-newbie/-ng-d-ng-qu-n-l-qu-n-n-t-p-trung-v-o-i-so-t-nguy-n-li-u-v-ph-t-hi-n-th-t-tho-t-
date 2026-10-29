@@ -33,9 +33,13 @@ class RegisterController extends ChangeNotifier {
   RegisterStatus _status = RegisterStatus.editing;
   RegisterStatus get status => _status;
 
-  /// Email đã đăng ký, hiện ở màn thành công để sao chép gửi cho chủ quán.
+  /// Email đã đăng ký (hiện ở màn "kiểm tra email" khi Supabase bắt xác nhận email).
   String _registeredEmail = '';
   String get registeredEmail => _registeredEmail;
+
+  /// `true`: đăng ký xong đã đăng nhập luôn (đi tiếp tạo quán).
+  bool _signedIn = false;
+  bool get signedIn => _signedIn;
 
   String? nameError;
   String? emailError;
@@ -72,7 +76,7 @@ class RegisterController extends ChangeNotifier {
     _status = RegisterStatus.loading;
     notifyListeners();
     try {
-      await _repository.signUp(
+      _signedIn = await _repository.signUp(
         fullName: fullName.trim(),
         email: cleanEmail,
         password: password,
