@@ -20,6 +20,13 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 4
 fi
 
+blocked="$(grep -m1 '^- \[!\]' "$TODO" || true)"
+if [ -n "$blocked" ]; then
+  echo "DỪNG: TODO có mục bị chặn: $blocked" >&2
+  echo "Giải quyết nguyên nhân, rồi chuyển mục đó về [ ] trước khi chạy loop tiếp." >&2
+  exit 6
+fi
+
 left() { grep -c '^- \[ \]' "$TODO" || true; }
 
 iter=0
@@ -81,7 +88,7 @@ while [ "$iter" -lt "$MAX_ITER" ]; do
   if bash "$WORKFLOW/scripts/check.sh" > "$WORKFLOW/.loop/check.log" 2>&1; then
     rm -f "$WORKFLOW/.loop/check_failed"
     if [ -n "$(git status --porcelain)" ]; then
-      git add -A && git commit -m "loop: lượt $((iter+1)) — $task" || exit $?
+      echo "Changes detected; no automatic staging or commit."
     else
       echo "Không có thay đổi file; bỏ qua commit."
     fi

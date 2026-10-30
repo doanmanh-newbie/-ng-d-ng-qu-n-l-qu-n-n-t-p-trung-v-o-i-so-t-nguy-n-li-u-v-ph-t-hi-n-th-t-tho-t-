@@ -1,10 +1,10 @@
 # TODO — rà soát và hoàn thiện Fore hiện có
 
-Mỗi lượt chỉ làm đúng một mục `[ ]` đầu tiên theo `workflow/AGENTS.md`. Các mục này là việc kiểm chứng repo hiện tại, không phải dựng ứng dụng từ đầu. Nếu một tiêu chí đã đạt, bổ sung bằng chứng test/ghi chú rồi tick `[x]`, không viết lại tính năng.
+Mỗi lượt chỉ làm đúng một mục `[ ]` đầu tiên theo `AGENTS.md`. Các mục này là việc kiểm chứng repo hiện tại, không phải dựng ứng dụng từ đầu. Nếu một tiêu chí đã đạt, bổ sung bằng chứng test/ghi chú rồi tick `[x]`, không viết lại tính năng.
 
 ## Giai đoạn 1 — nền và phiên
-- [ ] T01 Đồng bộ workflow với repo thật.
-  Xong khi: SPEC mô tả đúng stack/thư mục hiện có; TODO không còn yêu cầu cài framework đã có hoặc đổi Provider; các script chạy từ repo root dù được gọi qua `workflow/scripts/`; script dừng khi agent lỗi và không stage/commit thay đổi ngoài lượt.
+- [!] T01 Đồng bộ workflow với repo thật.
+  Xong khi: SPEC mô tả đúng stack/thư mục hiện có; TODO không còn yêu cầu cài framework đã có hoặc đổi Provider; các script chạy từ repo root dù được gọi qua `scripts/`; script dừng khi agent lỗi và không stage/commit thay đổi ngoài lượt.
 - [ ] T02 Rà soát đăng ký, đăng nhập, khôi phục phiên và phân quyền vai trò.
   Xong khi: test xác nhận đăng nhập sai hiện lỗi, phiên được khôi phục/đăng xuất đúng, chủ và nhân viên vào đúng không gian; mọi luồng demo/passwordless được ghi rõ là thử nghiệm và không trình bày như xác thực production.
 - [ ] T03 Rà soát khởi tạo quán, chuyển quán, lời mời và nhóm nhân viên.
@@ -26,4 +26,4 @@ Mỗi lượt chỉ làm đúng một mục `[ ]` đầu tiên theo `workflow/AG
 - [ ] T09 Rà soát trải nghiệm giao diện trên Android và web mục tiêu.
   Xong khi: chạy kiểm tra tự động liên quan và kiểm tra thủ công các luồng chính ở kích thước điện thoại; ghi nhận ảnh/thiết bị và lỗi còn lại; không tuyên bố Playwright nếu ứng dụng đang được kiểm tra qua Flutter.
 - [ ] T10 Chạy kiểm tra phát hành và ghi lại giới hạn còn tồn tại.
-  Xong khi: `bash workflow/scripts/check.sh --full` qua trên môi trường có dependency; test tự động qua; các bước cần Supabase/emulator thật được ghi riêng nếu không thể chạy trong CI/local.
+  Xong khi: `bash scripts/check.sh --full` qua trên môi trường có dependency; test tự động qua; các bước cần Supabase/emulator thật được ghi riêng nếu không thể chạy trong CI/local.
