@@ -1,20 +1,24 @@
 # TODO — rà soát và hoàn thiện Fore hiện có
 
-Mỗi lượt chỉ làm đúng một mục `[ ]` đầu tiên theo `AGENTS.md`. Các mục này là việc kiểm chứng repo hiện tại, không phải dựng ứng dụng từ đầu. Nếu một tiêu chí đã đạt, bổ sung bằng chứng test/ghi chú rồi tick `[x]`, không viết lại tính năng.
+Mỗi lượt chỉ làm đúng một mục `[ ]` đầu tiên theo `AGENTS.md`. Các mục này là việc kiểm chứng repo hiện tại, không phải dựng ứng dụng từ đầu. Nếu một tiêu chí đã đạt, bổ sung bằng chứng test/ghi chú và chờ script tick sau khi check xanh, không viết lại tính năng.
 
 ## Giai đoạn 1 — nền và phiên
 - [x] T01 Đồng bộ workflow với repo thật.
   Xong khi: SPEC mô tả đúng stack/thư mục hiện có; TODO không còn yêu cầu cài framework đã có hoặc đổi Provider; các script chạy từ repo root dù được gọi qua `scripts/`; script dừng khi agent lỗi và không stage/commit thay đổi ngoài lượt.
-- [x] T02 Rà soát đăng ký, đăng nhập, khôi phục phiên và phân quyền vai trò.
+- [ ] T02 Rà soát đăng ký, đăng nhập, khôi phục phiên và phân quyền vai trò.
+  Trạng thái: chờ check xanh
   Xong khi: test xác nhận đăng nhập sai hiện lỗi, phiên được khôi phục/đăng xuất đúng, chủ và nhân viên vào đúng không gian; mọi luồng demo/passwordless được ghi rõ là thử nghiệm và không trình bày như xác thực production.
   Bằng chứng: `login_controller_test.dart` kiểm tra thông tin sai; `session_controller_test.dart` kiểm tra khôi phục và đăng xuất; `role_home_screen_test.dart` kiểm tra không gian theo vai trò thật. Luồng tạo/đăng nhập nhân viên hiện cảnh báo rõ trong UI là thử nghiệm không an toàn; `StaffCredentials` ghi rõ rủi ro.
-- [x] T03 Rà soát khởi tạo quán, chuyển quán, lời mời và nhóm nhân viên.
+- [ ] T03 Rà soát khởi tạo quán, chuyển quán, lời mời và nhóm nhân viên.
+  Trạng thái: chờ check xanh
   Xong khi: test bao phủ chủ tạo quán, đổi quán, lời mời chờ/nhận/từ chối và lỗi quyền; RLS vẫn là lớp bảo mật chính.
   Bằng chứng: `shop_flow_test.dart` bao phủ tạo/chuyển quán, nhận/từ chối lời mời, gửi lời mời nhân viên và lỗi quyền; `008_staff_setup.sql` dùng RPC `SECURITY DEFINER` kiểm tra vai trò/định danh, còn `shop_invites` bật RLS và chỉ cấp quyền đọc lời mời chủ quán.
 
 ## Giai đoạn 2 — vận hành
 - [ ] T04 Rà soát vòng đời ca và kiểm kê đếm mù.
+  Trạng thái: chờ check xanh
   Xong khi: test bao phủ mở ca, trạng thái nhiều thiết bị, nhắc kiểm kê đầu ca, bắt buộc kiểm kê cuối ca, chặn đóng ca khi còn bill/mục đếm thiếu; không có số dự kiến hay kết quả đúng/sai trong UI nhân viên.
+  Bằng chứng: `shift_controller_test.dart` bao phủ mở ca, ca vừa mở/đóng trên thiết bị khác và từ chối đóng khi bill/kiểm kê còn thiếu; `stocktake_controller_test.dart` bao phủ kiểm kê đầu/cuối ca, số 0 hợp lệ, đếm lại từ ô trống và xóa số sau khi lưu; `no_shift_view_test.dart` xác nhận có lời nhắc kiểm kê đầu ca sau khi mở ca, có thể chọn đếm ngay. `StocktakeScreen` chỉ hiện tiến độ và trạng thái đã đếm, không hiển thị lượng đã nhập hay đúng/sai.
 - [ ] T05 Rà soát bàn, bill, đơn mang đi và thanh toán.
   Xong khi: test bao phủ tạo bill, món/số lượng/tổng, lý do khi sửa/hủy, hai phương thức thanh toán, cập nhật xung đột từ máy khác; không thêm hành vi ngoài SPEC.
 - [ ] T06 Rà soát kho, nhập hàng, hao hụt và thu/chi.

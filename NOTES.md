@@ -6,6 +6,15 @@
 - Loop mặc định tối đa 2 lượt; lỗi agent thì dừng, không tự retry/ngủ. Chạy thử bằng `MAX_ITER=1`.
 - Loop chỉ chạy từ working tree sạch; commit tự động chỉ sau khi check qua và vì thế không gom thay đổi có sẵn của người dùng.
 
+## Quyết định đã chốt
+- Trong giai đoạn thử nghiệm, nhân viên đăng nhập/đăng ký chỉ bằng số điện thoại hoặc email, KHÔNG mật khẩu và KHÔNG gửi mã xác nhận.
+- Chủ quán vẫn đăng nhập email + mật khẩu.
+- Sẽ nâng cấp xác thực sau; đây không phải việc của vòng này.
+
+
+## Quy trình TODO
+- Agent ghi `Lượt <mã mục>: đã viết code/test, chờ check`; chỉ script loop tick `[x]` và ghi `Check xanh` sau khi check pass.
+
 ## Bài học / lỗi đã gặp
 - TODO cũ được viết như app chưa tồn tại, khiến AI định dựng lại nền Flutter. Đã thay bằng backlog kiểm toán tính năng hiện có.
 - Git Bash chạy từ `D:/fore_project`; script nằm ở `scripts/` ở gốc repo.
@@ -19,3 +28,4 @@
 - Codex không chạy được flutter trong sandbox (pub get, --version đều treo, trong khi Git Bash chạy bình thường). Codex chỉ sửa code; loop chạy check.sh bên ngoài sandbox.
 - T02: luồng đăng nhập/tạo tài khoản nhân viên dùng thông tin liên hệ làm thông tin xác thực, nên đã cảnh báo rõ đây là thử nghiệm không an toàn ngay trên hai màn hình; test vai trò xác nhận không gian lấy từ hồ sơ, không lấy từ lựa chọn form.
 - T03: luồng tạo/chuyển quán gọi RPC database; kiểm tra `008_staff_setup.sql` cho thấy các thao tác nhạy cảm dùng `SECURITY DEFINER` và kiểm tra quyền/định danh, `shop_invites` bật RLS. Thêm test controller/repository giả cho tạo/chuyển quán, lời mời chờ/nhận/từ chối và lỗi quyền. Chưa chạy Flutter theo quy tắc sandbox; loop sẽ chạy kiểm tra ngoài sandbox.
+- T04: sau khi mở ca, giao diện hỏi nhân viên có muốn kiểm kê đầu ca ngay không; có thể để sau vì bước này không bắt buộc. Không chạy Flutter/test trong sandbox theo workflow; loop sẽ kiểm tra bên ngoài.
