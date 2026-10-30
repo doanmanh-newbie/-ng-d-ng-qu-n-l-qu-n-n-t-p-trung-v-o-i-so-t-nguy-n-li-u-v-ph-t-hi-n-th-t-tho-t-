@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Safe bounded workflow loop. Run from any directory: AGENT=codex MAX_ITER=2 bash workflow/scripts/loop.sh
+# Safe bounded workflow loop. Run from repo root: AGENT=codex MAX_ITER=2 bash scripts/loop.sh
 set -u
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-WORKFLOW="$ROOT/workflow"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WORKFLOW="$ROOT"
 TODO="$WORKFLOW/TODO.md"
 cd "$ROOT"
 
@@ -27,7 +27,7 @@ last_task=""
 same=0
 while [ "$iter" -lt "$MAX_ITER" ]; do
   if [ -f "$WORKFLOW/.loop/check_failed" ]; then
-    prompt="Lần kiểm tra trước thất bại. Đọc workflow/.loop/check.log, sửa lỗi và chạy bash workflow/scripts/check.sh đến khi qua. Không bắt đầu việc mới. Làm theo workflow/AGENTS.md. Không tự stage hoặc commit."
+    prompt="Lần kiểm tra trước thất bại. Đọc .loop/check.log, sửa lỗi và chạy bash scripts/check.sh đến khi qua. Không bắt đầu việc mới. Làm theo AGENTS.md. Không tự stage hoặc commit."
     task="Sửa lỗi kiểm tra đã lưu"
   else
     task="$(grep -m1 '^- \[ \]' "$TODO" || true)"
@@ -37,10 +37,10 @@ while [ "$iter" -lt "$MAX_ITER" ]; do
         exit 0
       fi
       touch "$WORKFLOW/.loop/check_failed"
-      echo "Check --full thất bại; dừng để tránh loop sửa không có mục tiêu. Xem workflow/.loop/check.log."
+      echo "Check --full thất bại; dừng để tránh loop sửa không có mục tiêu. Xem .loop/check.log."
       exit 5
     fi
-    prompt="Làm theo workflow/AGENTS.md: đọc workflow/SPEC.md, workflow/NOTES.md và workflow/TODO.md; làm đúng mục chưa xong đầu tiên, rồi dừng. Không tự stage hoặc commit."
+    prompt="Làm theo AGENTS.md: đọc SPEC.md, NOTES.md và TODO.md; làm đúng mục chưa xong đầu tiên, rồi dừng. Không tự stage hoặc commit."
   fi
 
   if [ "$task" = "$last_task" ]; then same=$((same+1)); else same=0; last_task="$task"; fi
@@ -74,7 +74,7 @@ while [ "$iter" -lt "$MAX_ITER" ]; do
   esac
 
   if [ "$rc" -ne 0 ]; then
-    echo "DỪNG: agent lỗi (rc=$rc), không retry. Xem workflow/.loop/agent_$((iter+1)).log."
+    echo "DỪNG: agent lỗi (rc=$rc), không retry. Xem .loop/agent_$((iter+1)).log."
     exit 3
   fi
 
@@ -87,9 +87,9 @@ while [ "$iter" -lt "$MAX_ITER" ]; do
     fi
   else
     touch "$WORKFLOW/.loop/check_failed"
-    echo "Check lỗi. Lượt kế tiếp chỉ sửa lỗi này; xem workflow/.loop/check.log."
+    echo "Check lỗi. Lượt kế tiếp chỉ sửa lỗi này; xem .loop/check.log."
   fi
   iter=$((iter+1))
 done
 
-echo "Hết $MAX_ITER lượt. Còn $(left) việc; xem workflow/TODO.md và workflow/NOTES.md."
+echo "Hết $MAX_ITER lượt. Còn $(left) việc; xem TODO.md và NOTES.md."
