@@ -30,3 +30,4 @@
 - Không dùng `git add -A`. Không commit thay đổi có sẵn của người dùng.
 - Nếu cần API/schema database chưa có, ghi vào “Cần chủ database” trong NOTES và đánh mục `[!]`; không tự sửa SQL.
 - Nếu check lỗi, thử sửa tối đa hai lần. Nếu vẫn lỗi, ghi log/nguyên nhân vào NOTES, đánh `[!]` và dừng.
+- "Rà soát" nghĩa là: nếu thấy lệch SPEC thì SỬA code/UI trong phạm vi app và thêm test; chỉ được chỉ ghi chú hoặc đánh [!] khi việc sửa cần đổi database. Không tick [x] chỉ vì đã thêm cảnh báo hay ghi chú.
