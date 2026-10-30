@@ -17,3 +17,5 @@ secrets.*
 key.properties
 *.jks
 env.json
+.loop/
+.env

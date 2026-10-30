@@ -1,43 +1,34 @@
-# Fore
+# Workflow phát triển Fore
 
-Ứng dụng quản lý quán bán, tập trung vào **đối soát nguyên liệu và phát hiện thất thoát**.
-Quán nước (trà sữa, cà phê) trước, sau đó mở rộng sang phở, cơm.
+Workflow này dùng để rà soát và hoàn thiện ứng dụng Fore đang có, không phải bộ khung để tạo app mới.
 
-> Môn: Lập trình thiết bị di động · Công nghệ: Flutter (Dart) + Supabase (PostgreSQL)
+## File chính
+- `SPEC.md`: mục tiêu, người dùng, nghiệp vụ và luật sản phẩm.
+- `TODO.md`: backlog theo trạng thái repo; mỗi vòng xử lý đúng một mục.
+- `AGENTS.md`: hướng dẫn, giới hạn và tiêu chí an toàn cho AI.
+- `NOTES.md`: quyết định, kết quả và việc cần chủ database.
+- `scripts/check.sh`: người chấm — Flutter analyze, Flutter tests, invariant checks; `--full` thêm Android debug build.
+- `scripts/loop.sh`: bounded loop qua Codex CLI hoặc Claude CLI.
 
-## Vấn đề giải quyết
-Chủ quán khó biết nguyên liệu hao hụt có đúng với số ly đã bán hay không. Fore so sánh:
-- **Thực dùng** = tồn đầu + nhập − tồn cuối (nhân viên đếm mù)
-- **Lý thuyết** = Σ (số bán × định lượng công thức)
-- **Chênh lệch** = thực dùng − lý thuyết → quy ra số ly và doanh thu ước tính
+## Trước khi chạy
+1. Dùng Git Bash hoặc WSL tại repo `D:/fore_project`.
+2. Đảm bảo `git status --short` sạch. Loop cố ý dừng nếu có thay đổi chưa commit, để không stage nhầm công việc sẵn có.
+3. Xác nhận CLI hoạt động: `codex --version` hoặc `claude --version`.
+4. Kiểm tra TODO đầu tiên còn phù hợp với sản phẩm và máy có Flutter/Android build prerequisites.
 
-## Thành viên
-| Họ tên | Vai trò | Phụ trách |
-|---|---|---|
-| (điền) | Trưởng nhóm, nghiệp vụ | Đối soát, kết ca, SQL |
-| (điền) | Thành viên | Nguyên liệu, công thức, nhập kho |
-| (điền) | Thành viên | Bán hàng, bàn, mang đi |
+## Chạy an toàn
+Chạy thử một vòng trước:
 
-## Cấu trúc
-```
-lib/          mã Dart (core/ dùng chung, features/ theo chức năng)
-test/         kiểm thử
-database/     SQL: bảng, luật, hàm nghiệp vụ, hàm đối soát, dữ liệu mô phỏng, kiểm thử
-docs/         tài liệu, báo cáo tuần, biên bản họp
+```bash
+AGENT=codex MAX_ITER=1 bash workflow/scripts/loop.sh
 ```
 
-## Chạy dự án
-1. Cài Flutter, chạy `flutter doctor`.
-2. Lần đầu, tạo phần nền Android: `flutter create --project-name fore --platforms=android .`
-   (nếu `lib/main.dart` bị ghi đè: `git checkout lib/main.dart`)
-3. `flutter pub get`
-4. Lấy `SUPABASE_URL` và `SUPABASE_ANON_KEY` từ nhóm trưởng (xem `.env.example`).
-5. Chạy:
-   ```
-   flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...
-   ```
-6. Kiểm thử: `flutter test`. Cách tổ chức code (OOP): `docs/kien-truc-code.md`.
-7. Database: chạy lần lượt `001` đến `004` trong `database/` trên SQL Editor của Supabase (xem `database/README.md`). `005` là dữ liệu mô phỏng, chỉ chạy trên database thử.
+`MAX_ITER` là giới hạn cứng số vòng agent. Agent lỗi thì dừng ngay, không retry/ngủ. Mỗi vòng chạy `check.sh`; khi qua và working tree sạch từ đầu, loop tạo commit riêng. Khi TODO hết, loop chạy `check.sh --full` một lần rồi dừng.
 
-## Tiến độ
-Xem tab **Projects** (bảng việc), **Milestones** (8 tuần) và thư mục `docs/weekly/`.
+Codex CLI cần có trong PATH của Git Bash. Codex desktop và Codex CLI là hai cách chạy riêng; app desktop không tự làm cho lệnh `codex` xuất hiện trong terminal. `codex exec` flags có thể khác theo phiên bản; nếu lỗi, xem `workflow/.loop/agent_N.log` và `codex exec --help` trước khi sửa script.
+
+## Giới hạn
+- Loop không chạy nếu repo có thay đổi chưa commit.
+- Không chạy reset/seed database; `database/` chỉ đọc.
+- Lỗi check sau một vòng được đánh dấu trong `workflow/.loop/check_failed`; vòng kế tiếp chỉ sửa check đó.
+- Không dùng workflow để tự động triển khai, publish hoặc đụng dữ liệu production.
