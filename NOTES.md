@@ -15,4 +15,4 @@
 ## Cần chủ database
 - Chưa có.
 
-- T01 chưa hoàn tất: `.loop/check.log` ghi `flutter analyze` chạy 88,5 giây và báo 23 mục mức `info`; không có kết quả `flutter test` trong log nên chưa xác nhận check qua. Không đánh dấu T01 `[x]` cho đến khi chạy được toàn bộ check.
+- T01 xong: check.sh chạy qua (201 test, mất khoảng 35 giây), script chạy từ gốc repo.
