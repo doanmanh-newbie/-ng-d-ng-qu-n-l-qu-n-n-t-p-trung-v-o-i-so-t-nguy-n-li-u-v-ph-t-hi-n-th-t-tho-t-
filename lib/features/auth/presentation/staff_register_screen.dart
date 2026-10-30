@@ -105,6 +105,12 @@ class _StaffRegisterScreenState extends State<StaffRegisterScreen> {
                 'lời mời sẽ hiện trong hộp thư của bạn.',
                 style: AppTextStyles.body,
               ),
+              const SizedBox(height: 8),
+              const Text(
+                'Tạo tài khoản nhân viên hiện là luồng thử nghiệm, chưa an toàn để dùng thật: '
+                'không có mật khẩu hay mã xác nhận; ai biết số/email đều có thể vào tài khoản.',
+                style: AppTextStyles.caption,
+              ),
               const SizedBox(height: 24),
               ContactKindToggle(
                 kind: c.kind,
