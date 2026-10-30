@@ -14,9 +14,14 @@ import '../application/shift_controller.dart';
 /// Màn "Chưa mở ca" (thiết kế "Home / No-shift"): thẻ giữa màn kèm nút Mở ca.
 /// Bấm Mở ca thì hỏi số tiền có trong két lúc bắt đầu.
 class NoShiftView extends StatelessWidget {
-  const NoShiftView({super.key, required this.shift});
+  const NoShiftView({
+    super.key,
+    required this.shift,
+    required this.onCountOpening,
+  });
 
   final OpsShiftController shift;
+  final VoidCallback onCountOpening;
 
   @override
   Widget build(BuildContext context) => RefreshIndicator(
@@ -75,8 +80,28 @@ class NoShiftView extends StatelessWidget {
     if (cash == null || !context.mounted) return;
     try {
       final opened = await shift.openShift(cash);
-      if (opened && context.mounted)
+      if (opened && context.mounted) {
         showNotice(context, 'Đã mở ca. Chúc ca làm việc thuận lợi!');
+        final countNow = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Kiểm kê đầu ca'),
+            content: const Text(
+                'Đếm nguyên liệu thực tế trước khi bắt đầu bán. Số dự kiến sẽ không hiển thị.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Để sau'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Đếm ngay'),
+              ),
+            ],
+          ),
+        );
+        if (countNow == true && context.mounted) onCountOpening();
+      }
     } on AppFailure catch (f) {
       if (context.mounted) showFailure(context, f);
     }
