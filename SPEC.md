@@ -63,6 +63,8 @@ Chủ quán cũng dùng được mọi màn dưới đây. Mỗi màn là một 
 
 ### 1. Đăng nhập
 
+> Ghi chú: áp dụng quyết định thử nghiệm tại mục “Quyết định đã chốt” trong `NOTES.md`.
+
 | Mục | Nội dung |
 | --- | --- |
 | Ai dùng | Nhân viên và chủ |

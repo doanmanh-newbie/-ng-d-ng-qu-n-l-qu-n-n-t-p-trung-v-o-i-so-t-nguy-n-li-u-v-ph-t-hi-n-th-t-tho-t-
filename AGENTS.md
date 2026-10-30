@@ -9,13 +9,14 @@
 ## Mỗi lượt
 1. Đọc SPEC, NOTES, TODO và `git status --short`.
 2. Nếu `.loop/check_failed` tồn tại, chỉ sửa lỗi trong `.loop/check.log`.
-3. Nếu không, lấy đúng mục `[ ]` đầu tiên trong `TODO.md`. Chỉ xử lý mục đó. Nếu mục đã hoàn thành trong code, kiểm chứng bằng code/test rồi đánh dấu hoàn thành, không dựng lại.
+3. Nếu không, lấy đúng mục `[ ]` đầu tiên trong `TODO.md`. Chỉ xử lý mục đó. Nếu mục đã hoàn thành trong code, kiểm chứng bằng code/test rồi ghi trạng thái chờ check, không dựng lại.
 4. Trước khi sửa, xác định tiêu chí nghiệm thu và các file cần chạm. Giữ nguyên thay đổi có sẵn của người dùng.
 5. Viết/cập nhật test cho hành vi thay đổi. KHÔNG chạy `flutter`, `dart` hay `scripts/check.sh` (trong sandbox của Codex chúng bị treo). Chỉ sửa file rồi dừng; loop sẽ chạy kiểm tra bên ngoài sandbox và ghi kết quả vào `.loop/check.log`.
-6. Tick `[x]` khi đã viết xong code và test đủ tiêu chí. Nếu kiểm tra của loop báo lỗi, lượt sau sẽ sửa; sửa hai lần vẫn lỗi thì đánh `[!]`. Ghi quyết định ngắn vào NOTES.
+6. Agent KHÔNG tự tick `[x]`. Agent chỉ ghi vào NOTES dòng `Lượt <mã mục>: đã viết code/test, chờ check`. Script loop mới được tick sau khi check pass. Nếu kiểm tra của loop báo lỗi, lượt sau sẽ sửa; sửa hai lần vẫn lỗi thì đánh `[!]`. Ghi quyết định ngắn vào NOTES.
 7. Không tự stage hoặc commit. Chỉ commit khi người dùng yêu cầu hoặc khi loop đã xác nhận working tree sạch trước khi bắt đầu và commit chỉ thay đổi của lượt đó.
 
 ## Luật sản phẩm
+- Mục trong NOTES > Quyết định đã chốt thắng SPEC. Không được sửa code để theo SPEC ở điểm đã chốt.
 - Đếm mù: màn kiểm kê không hiện tồn dự kiến, tồn hệ thống, số đếm trước hay phản hồi đúng/sai. Nhân viên không xem tồn kho.
 - Đối soát chỉ cảnh báo, không kết luận gian lận và không chặn thao tác. Cảnh báo chỉ ở giao diện chủ. Dùng “lệch”, “cần kiểm tra”; tránh “gian lận”, “trộm”.
 - Màu trạng thái luôn có chữ hoặc biểu tượng đi kèm.
