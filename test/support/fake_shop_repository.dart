@@ -9,11 +9,19 @@ class FakeShopRepository implements ShopRepository {
   List<TeamMember> members = [];
   List<PendingInvite> pending = [];
   AppFailure? failure;
+  String? selectedShopId;
+  String? createdShopName;
+  String? createdOwnerName;
+  final acceptedInviteIds = <String>[];
+  final declinedInviteIds = <String>[];
+  int inviteStaffCalls = 0;
 
   @override
   Future<void> createShop(
       {required String shopName, required String ownerName}) async {
     if (failure != null) throw failure!;
+    createdShopName = shopName;
+    createdOwnerName = ownerName;
   }
 
   @override
@@ -25,6 +33,7 @@ class FakeShopRepository implements ShopRepository {
   @override
   Future<void> selectShop(String shopId) async {
     if (failure != null) throw failure!;
+    selectedShopId = shopId;
   }
 
   @override
@@ -36,12 +45,14 @@ class FakeShopRepository implements ShopRepository {
   @override
   Future<void> acceptInvite(String inviteId) async {
     if (failure != null) throw failure!;
+    acceptedInviteIds.add(inviteId);
     invites = invites.where((i) => i.id != inviteId).toList();
   }
 
   @override
   Future<void> declineInvite(String inviteId) async {
     if (failure != null) throw failure!;
+    declinedInviteIds.add(inviteId);
     invites = invites.where((i) => i.id != inviteId).toList();
   }
 
@@ -58,6 +69,7 @@ class FakeShopRepository implements ShopRepository {
     String? email,
   }) async {
     if (failure != null) throw failure!;
+    inviteStaffCalls++;
   }
 
   @override

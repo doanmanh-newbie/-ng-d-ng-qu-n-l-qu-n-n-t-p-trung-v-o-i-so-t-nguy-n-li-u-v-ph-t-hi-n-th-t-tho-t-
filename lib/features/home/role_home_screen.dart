@@ -11,6 +11,8 @@ import '../owner/owner_home_screen.dart';
 class RoleHomeScreen extends StatelessWidget {
   const RoleHomeScreen({super.key});
 
+  static bool isOwnerRole(StaffRole role) => role == StaffRole.owner;
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<SessionController>().state;
@@ -23,7 +25,7 @@ class RoleHomeScreen extends StatelessWidget {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-    if (state.profile.role == StaffRole.owner) {
+    if (isOwnerRole(state.profile.role)) {
       return OwnerHomeScreen(profile: state.profile);
     }
     return const OpsHomeScreen();

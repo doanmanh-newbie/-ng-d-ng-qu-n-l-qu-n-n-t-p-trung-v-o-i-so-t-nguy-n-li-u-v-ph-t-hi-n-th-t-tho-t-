@@ -65,7 +65,8 @@ class _StaffLoginPanelState extends State<StaffLoginPanel> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Chỉ cần nhập vậy là vào được, không cần mật khẩu.',
+          'Đây là đăng nhập thử nghiệm, chưa an toàn để dùng thật: không có mật khẩu '
+          'hay mã xác nhận; ai biết số/email đều có thể vào tài khoản.',
           style: AppTextStyles.caption,
         ),
         if (c.formError != null) ...[
