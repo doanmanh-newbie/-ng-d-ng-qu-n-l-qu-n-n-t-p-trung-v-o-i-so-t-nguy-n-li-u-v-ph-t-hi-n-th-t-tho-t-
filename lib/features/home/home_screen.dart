@@ -268,7 +268,12 @@ class _HomeScreenState extends State<OpsHomeScreen>
       onSignOut: _signOut,
     );
     if (!_shift.hasOpenShift)
-      return tab == 4 ? more : NoShiftView(shift: _shift);
+      return tab == 4
+          ? more
+          : NoShiftView(
+              shift: _shift,
+              onCountOpening: () => _openCount(CountKind.open),
+            );
     return switch (tab) {
       0 => TablesView(
           tables: _tables,
