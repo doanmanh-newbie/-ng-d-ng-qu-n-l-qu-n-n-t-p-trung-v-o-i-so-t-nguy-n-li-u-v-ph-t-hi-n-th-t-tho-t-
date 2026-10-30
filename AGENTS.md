@@ -3,15 +3,15 @@
 ## Nguồn sự thật
 - Đây là repo Flutter/Dart hiện có. Trước khi chọn việc, kiểm tra `pubspec.yaml`, `lib/`, `test/` và các thay đổi Git.
 - Stack hiện tại: Flutter, Dart, `supabase_flutter`, `provider`, PostgreSQL/Supabase. Không tự chuyển sang Riverpod, Go Router hay kiến trúc khác.
-- Đặc tả sản phẩm: `workflow/SPEC.md`. Việc cần làm: `workflow/TODO.md`. Ghi chú: `workflow/NOTES.md`.
+- Đặc tả sản phẩm: `SPEC.md`. Việc cần làm: `TODO.md`. Ghi chú: `NOTES.md`.
 - `database/` là chỉ đọc đối với workflow này. Không sửa migration, seed hay dữ liệu Supabase.
 
 ## Mỗi lượt
 1. Đọc SPEC, NOTES, TODO và `git status --short`.
-2. Nếu `workflow/.loop/check_failed` tồn tại, chỉ sửa lỗi trong `workflow/.loop/check.log`.
-3. Nếu không, lấy đúng mục `[ ]` đầu tiên trong `workflow/TODO.md`. Chỉ xử lý mục đó. Nếu mục đã hoàn thành trong code, kiểm chứng bằng code/test rồi đánh dấu hoàn thành, không dựng lại.
+2. Nếu `.loop/check_failed` tồn tại, chỉ sửa lỗi trong `.loop/check.log`.
+3. Nếu không, lấy đúng mục `[ ]` đầu tiên trong `TODO.md`. Chỉ xử lý mục đó. Nếu mục đã hoàn thành trong code, kiểm chứng bằng code/test rồi đánh dấu hoàn thành, không dựng lại.
 4. Trước khi sửa, xác định tiêu chí nghiệm thu và các file cần chạm. Giữ nguyên thay đổi có sẵn của người dùng.
-5. Viết/cập nhật test cho hành vi thay đổi. Chạy `bash workflow/scripts/check.sh`; chỉ báo đạt khi lệnh trả mã 0.
+5. Viết/cập nhật test cho hành vi thay đổi. Chỉ chạy kiểm tra nhanh: `flutter test <file test liên quan>` và `dart analyze <file đã sửa>`. Không chạy `scripts/check.sh` (mất hơn 1 phút); loop sẽ tự chạy sau khi bạn dừng. Chỉ tick `[x]` khi test liên quan đạt.
 6. Chỉ tick `[x]` khi tiêu chí và kiểm tra đạt. Ghi quyết định ngắn vào NOTES.
 7. Không tự stage hoặc commit. Chỉ commit khi người dùng yêu cầu hoặc khi loop đã xác nhận working tree sạch trước khi bắt đầu và commit chỉ thay đổi của lượt đó.
 
