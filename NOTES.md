@@ -16,3 +16,5 @@
 - Chưa có.
 
 - T01 xong: check.sh chạy qua (201 test, mất khoảng 35 giây), script chạy từ gốc repo.
+- Codex không chạy được flutter trong sandbox (pub get, --version đều treo, trong khi Git Bash chạy bình thường). Codex chỉ sửa code; loop chạy check.sh bên ngoài sandbox.
+- Codex không chạy được flutter trong sandbox (pub get, --version đều treo, trong khi Git Bash chạy bình thường). Codex chỉ sửa code; loop chạy check.sh bên ngoài sandbox.
