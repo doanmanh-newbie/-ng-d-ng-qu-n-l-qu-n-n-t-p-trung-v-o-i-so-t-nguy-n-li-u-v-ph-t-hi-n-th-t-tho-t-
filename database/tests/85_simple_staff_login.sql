@@ -1,5 +1,7 @@
--- Kiểm thử đăng nhập nhân viên đơn giản (015, 016): số điện thoại đăng ký bằng email giả vẫn nhận được lời mời.
--- Chạy sau tests/00_supabase_stub.sql và 001..015. In "SMOKE: DUNG" nếu đúng. KHÔNG chạy trên Supabase thật.
+-- Hồi quy lời mời cho đăng nhập nhân viên đơn giản: số điện thoại qua email giả nhận lời mời
+-- ngay cả khi tài khoản cũ không có demo_phone metadata.
+-- Chạy sau tests/00_supabase_stub.sql và 001..017. In "SMOKE: DUNG" nếu đúng.
+-- File này TRUNCATE và DELETE dữ liệu; chỉ chạy trên database test riêng, KHÔNG chạy trên Supabase thật.
 \set ON_ERROR_STOP on
 truncate shops, user_settings, shop_invites, staff cascade;
 delete from auth.users;

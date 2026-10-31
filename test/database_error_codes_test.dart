@@ -11,7 +11,7 @@ const _handledByFailureClasses = {
   'INVITE_NOT_FOUND',
 };
 
-/// Mọi `raise exception 'MA_LOI'` trong database/*.sql phải có câu tiếng Việt, nếu không người dùng
+/// Mọi `raise exception 'MA_LOI'` trong các nhóm cài SQL phải có câu tiếng Việt, nếu không người dùng
 /// chỉ thấy "Có lỗi xảy ra". Thêm mã lỗi mới ở database mà quên câu thông báo thì test này báo ngay.
 void main() {
   test('mọi mã lỗi database đều có câu thông báo tiếng Việt', () {
@@ -20,7 +20,7 @@ void main() {
     for (final entity in Directory('database').listSync()) {
       if (entity is! File) continue;
       final name = entity.uri.pathSegments.last;
-      if (!RegExp(r'^0\d\d_.*\.sql$').hasMatch(name)) continue;
+      if (!RegExp(r'^0[1-4]_.*\.sql$').hasMatch(name)) continue;
       for (final m in pattern.allMatches(entity.readAsStringSync())) {
         codes.add(m.group(1)!);
       }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_text_styles.dart';
+import 'package:fore/core/design/colors.dart';
 
 /// Mở một bottom sheet bo góc, tự nâng lên khi bàn phím hiện, có tiêu đề kiểu thiết kế.
 Future<T?> showForeSheet<T>(
@@ -108,7 +109,7 @@ class _ReasonFormState extends State<_ReasonForm> {
           FilledButton(
             style: widget.destructive
                 ? FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFD8433A),
+                    backgroundColor: AppColors.legacyDanger,
                   )
                 : null,
             onPressed: _valid

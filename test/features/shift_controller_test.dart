@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fore/core/errors/app_failure.dart';
-import 'package:fore/features/ops/shift/application/shift_controller.dart';
-import 'package:fore/features/ops/shift/domain/shift_models.dart';
+import 'package:fore/features/shift/operations/application/ops_shift_controller.dart';
+import 'package:fore/features/shift/operations/domain/ops_shift_models.dart';
 
 import '../support/fakes.dart';
 

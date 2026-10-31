@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../motion.dart';
 import '../theme/app_colors.dart';
+import 'package:fore/core/design/typography.dart';
 
 /// Bộ tăng giảm số lượng tròn trịa: nút "-" chỉ hiện khi đã chọn.
 class QtyStepper extends StatelessWidget {
@@ -24,7 +26,7 @@ class QtyStepper extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         AnimatedSize(
-          duration: const Duration(milliseconds: 180),
+          duration: Motion.of(context, const Duration(milliseconds: 180)),
           curve: Curves.easeOut,
           alignment: Alignment.centerRight,
           child: value > 0
@@ -43,7 +45,7 @@ class QtyStepper extends StatelessWidget {
                         '$value',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: AppFontSizes.s16,
                           fontWeight: FontWeight.w700,
                           color: AppColors.ink,
                         ),

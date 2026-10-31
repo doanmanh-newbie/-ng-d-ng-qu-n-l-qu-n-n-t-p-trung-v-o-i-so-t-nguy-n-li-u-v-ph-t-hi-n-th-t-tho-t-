@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../owner_dashboard_models.dart';
+import '../domain/owner_dashboard_models.dart';
 
 /// Hộp thông báo chủ quán: lời mời và cảnh báo đối soát, có trạng thái đã đọc.
 class OwnerNotificationsScreen extends StatefulWidget {

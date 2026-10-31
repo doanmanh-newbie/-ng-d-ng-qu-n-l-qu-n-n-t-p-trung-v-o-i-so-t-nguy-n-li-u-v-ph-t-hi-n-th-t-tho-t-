@@ -67,12 +67,14 @@ int? quantityInBase(String text, UnitChoice choice) {
   final cleaned = text.trim().replaceAll(',', '.');
   if (cleaned.isEmpty) return null;
   final value = double.tryParse(cleaned);
-  if (value == null || value.isNaN || value.isInfinite || value <= 0)
+  if (value == null || value.isNaN || value.isInfinite || value <= 0) {
     return null;
+  }
   final base = value * choice.factor;
   final rounded = base.round();
-  if ((base - rounded).abs() > 1e-6)
+  if ((base - rounded).abs() > 1e-6) {
     return null; // không ra số nguyên: không đoán
+  }
   if (rounded <= 0 || rounded > 1000000000) return null;
   return rounded;
 }

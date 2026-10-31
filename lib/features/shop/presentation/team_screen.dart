@@ -1,22 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../app/app_routes.dart';
+import '../../../core/errors/failure_messages.dart';
 import '../../../core/phone.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/fade_slide_in.dart';
-import '../../../core/widgets/fore_button.dart';
+import '../../../core/widgets/fore_card.dart';
 import '../../../core/widgets/loading_button.dart';
+import '../../../core/widgets/empty_state.dart' show ErrorRetry;
+import '../../auth/application/session_controller.dart';
 import '../application/team_controller.dart';
 import '../domain/shop_models.dart';
 import 'invite_list.dart' show timeAgo;
 
 /// Chủ quán: nhân viên của quán và nút "Thêm nhân viên" bằng số điện thoại.
-class TeamScreen extends StatelessWidget {
+class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key});
 
+  @override
+  State<TeamScreen> createState() => _TeamScreenState();
+}
+
+class _TeamScreenState extends State<TeamScreen> {
+  bool _checkingAccess = true;
+  String? _accessError;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prepareScreen());
+  }
+
+  Future<void> _prepareScreen() async {
+    if (!mounted) return;
+    final controller = context.read<TeamController>();
+
+    // Some widget tests mount this screen without the app-level session provider.
+    // Production always has it, so revalidate the server role before reading team data.
+    final session = context.read<SessionController?>();
+    if (session == null) {
+      await controller.load();
+      if (mounted) setState(() => _checkingAccess = false);
+      return;
+    }
+
+    final failure = await session.refreshAfterSignIn();
+    if (!mounted) return;
+    if (failure != null) {
+      setState(() {
+        _accessError = failure.userMessage;
+        _checkingAccess = false;
+      });
+      return;
+    }
+
+    final state = session.state;
+    if (state is SessionSignedIn && state.profile.role.isOwner) {
+      await controller.load();
+      if (mounted) setState(() => _checkingAccess = false);
+      return;
+    }
+
+    final route = AppRoutes.routeFor(state);
+    if (route == null) {
+      setState(() {
+        _accessError = 'Chưa xác định được quyền của phiên. Hãy thử tải lại.';
+        _checkingAccess = false;
+      });
+      return;
+    }
+
+    setState(() => _checkingAccess = false);
+    Navigator.of(context).pushNamedAndRemoveUntil(route, (_) => false);
+  }
+
   Future<void> _openInvite(BuildContext context) async {
+    // Auth state is shared by browser windows on the same origin. If another
+    // window signed in as a staff member, the cached owner profile can be stale.
+    // Recheck the server profile before showing an owner-only action.
+    final session = context.read<SessionController>();
+    final sessionFailure = await session.refreshAfterSignIn();
+    if (!context.mounted) return;
+
+    if (sessionFailure != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(sessionFailure.userMessage),
+      ));
+      return;
+    }
+
+    final state = session.state;
+    if (state is! SessionSignedIn || !state.profile.role.isOwner) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          'Phiên hiện tại không phải chủ quán. Hãy đăng nhập lại đúng tài khoản chủ.',
+        ),
+      ));
+      final route = AppRoutes.routeFor(state);
+      if (route != null) {
+        Navigator.of(context).pushNamedAndRemoveUntil(route, (_) => false);
+      }
+      return;
+    }
+
     final controller = context.read<TeamController>();
     controller.clearFormErrors();
     final messenger = ScaffoldMessenger.of(context);
@@ -35,7 +126,9 @@ class TeamScreen extends StatelessWidget {
     if (sent != null) {
       messenger.showSnackBar(SnackBar(
         behavior: SnackBarBehavior.floating,
-        content: Text('Đã mời $sent. Họ sẽ nhận thông báo trong ứng dụng.'),
+        content: Text(
+          'Đã gửi lời mời $sent. Nhân viên đăng nhập bằng đúng số điện thoại hoặc email để xem trong Hộp thư.',
+        ),
       ));
     }
   }
@@ -43,6 +136,30 @@ class TeamScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.watch<TeamController>();
+    if (_checkingAccess) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_accessError != null) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: const Text('Nhân viên', style: AppTextStyles.heading),
+        ),
+        body: ErrorRetry(
+          message: _accessError!,
+          onRetry: () {
+            setState(() {
+              _checkingAccess = true;
+              _accessError = null;
+            });
+            _prepareScreen();
+          },
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -69,15 +186,20 @@ class TeamScreen extends StatelessWidget {
                 child: Center(child: CircularProgressIndicator()),
               )
             else if (c.error != null && c.members.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 32),
-                child: Text(c.error!,
-                    textAlign: TextAlign.center, style: AppTextStyles.body),
+              ErrorRetry(
+                message: c.error!,
+                onRetry: () {
+                  setState(() {
+                    _checkingAccess = true;
+                    _accessError = null;
+                  });
+                  _prepareScreen();
+                },
               )
             else ...[
-              if (c.pending.isNotEmpty) ...[
-                const _SectionTitle('Đang chờ chấp nhận'),
-                for (final p in c.pending)
+              if (c.inviteHistory.isNotEmpty) ...[
+                const _SectionTitle('Lời mời nhân viên'),
+                for (final p in c.inviteHistory)
                   FadeSlideIn(
                     key: ValueKey(p.id),
                     child: _PendingTile(invite: p),
@@ -132,7 +254,7 @@ class _Avatar extends StatelessWidget {
               name.isEmpty
                   ? '?'
                   : String.fromCharCode(name.runes.first).toUpperCase(),
-              style: AppTextStyles.heading.copyWith(fontSize: 18),
+              style: AppTextStyles.heading.copyWith(fontSize: AppFontSizes.s18),
             ),
           ),
         ),
@@ -163,7 +285,7 @@ class _MemberTile extends StatelessWidget {
                   Text(
                     member.fullName,
                     style: AppTextStyles.label.copyWith(
-                      fontSize: 15,
+                      fontSize: AppFontSizes.s15,
                       color: member.active
                           ? AppColors.textPrimary
                           : AppColors.inkMuted,
@@ -216,15 +338,36 @@ class _PendingTile extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
         child: Row(
           children: [
-            const DecoratedBox(
+            DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.warningSoft,
+                color: invite.status == 'accepted'
+                    ? AppColors.statusHealthyTint
+                    : invite.status == 'declined'
+                        ? AppColors.statusCriticalTint
+                        : invite.status == 'expired'
+                            ? AppColors.statusAttentionTint
+                            : AppColors.warningSoft,
                 shape: BoxShape.circle,
               ),
               child: SizedBox.square(
                 dimension: 44,
-                child: Icon(Icons.hourglass_top_rounded,
-                    color: AppColors.warningText, size: 22),
+                child: Icon(
+                  invite.status == 'accepted'
+                      ? Icons.check_circle_outline
+                      : invite.status == 'declined'
+                          ? Icons.do_not_disturb_on_outlined
+                          : invite.status == 'expired'
+                              ? Icons.hourglass_disabled_rounded
+                              : Icons.hourglass_top_rounded,
+                  color: invite.status == 'accepted'
+                      ? AppColors.statusHealthy
+                      : invite.status == 'declined'
+                          ? AppColors.statusCritical
+                          : invite.status == 'expired'
+                              ? AppColors.statusAttention
+                              : AppColors.warningText,
+                  size: 22,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -233,30 +376,45 @@ class _PendingTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(invite.fullName,
-                      style: AppTextStyles.label.copyWith(fontSize: 15)),
+                      style: AppTextStyles.label
+                          .copyWith(fontSize: AppFontSizes.s15)),
                   Text(
-                    '${[
+                    invite.statusLabel,
+                    style: AppTextStyles.bodyStrong.copyWith(
+                      color: invite.status == 'accepted'
+                          ? AppColors.statusHealthy
+                          : invite.status == 'declined'
+                              ? AppColors.statusCritical
+                              : invite.status == 'expired'
+                                  ? AppColors.statusAttention
+                                  : AppColors.warningText,
+                    ),
+                  ),
+                  Text(
+                    [
                       if (invite.phone != null)
                         Phone.pretty('+${invite.phone}'),
                       if (invite.email != null) invite.email,
-                      timeAgo(invite.createdAt)
-                    ].join(' · ')}',
+                      timeAgo(invite.respondedAt ?? invite.createdAt)
+                    ].join(' · '),
                     style: AppTextStyles.caption,
                   ),
                 ],
               ),
             ),
-            IconButton(
-              tooltip: 'Hủy lời mời',
-              icon: const Icon(Icons.close_rounded),
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                final err = await context.read<TeamController>().cancel(invite);
-                if (err != null) {
-                  messenger.showSnackBar(SnackBar(content: Text(err)));
-                }
-              },
-            ),
+            if (invite.status == 'pending')
+              IconButton(
+                tooltip: 'Hủy lời mời',
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final err =
+                      await context.read<TeamController>().cancel(invite);
+                  if (err != null) {
+                    messenger.showSnackBar(SnackBar(content: Text(err)));
+                  }
+                },
+              ),
           ],
         ),
       ),
@@ -346,7 +504,7 @@ class _InviteSheetState extends State<_InviteSheet> {
               const SizedBox(height: 8),
               Text(c.formError!,
                   style: const TextStyle(
-                      color: AppColors.statusOff, fontSize: 13)),
+                      color: AppColors.statusOff, fontSize: AppFontSizes.s13)),
             ],
             const SizedBox(height: 16),
             LoadingButton(

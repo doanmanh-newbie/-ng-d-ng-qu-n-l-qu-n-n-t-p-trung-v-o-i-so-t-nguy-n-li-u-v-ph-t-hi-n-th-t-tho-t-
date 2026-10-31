@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import 'splash_strings.dart';
+import 'package:fore/core/design/typography.dart';
 
 /// Dòng nhỏ cuối màn hình.
 ///
@@ -11,7 +12,7 @@ class SplashFooter extends StatelessWidget {
   const SplashFooter({super.key});
 
   static const _style = TextStyle(
-    fontSize: 10,
+    fontSize: AppFontSizes.s10,
     fontWeight: FontWeight.w700,
     letterSpacing: 0.8,
     color: AppColors.textSecondary,

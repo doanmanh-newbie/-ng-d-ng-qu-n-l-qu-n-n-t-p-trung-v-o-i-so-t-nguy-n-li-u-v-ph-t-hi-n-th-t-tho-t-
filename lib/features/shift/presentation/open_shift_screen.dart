@@ -233,7 +233,7 @@ class _Heading extends StatelessWidget {
         MinuteTicker(
           builder: (context, now) => Text(
             'Hôm nay, ${formatDayMonth(now)}',
-            style: AppTextStyles.body.copyWith(fontSize: 14),
+            style: AppTextStyles.body.copyWith(fontSize: AppFontSizes.s14),
           ),
         ),
         const SizedBox(height: 4),
@@ -283,14 +283,14 @@ class _FormView extends StatelessWidget {
               name.isEmpty
                   ? formatHm(now)
                   : '${formatHm(now)} · $name đang mở ca',
-              style: AppTextStyles.label.copyWith(fontSize: 15),
+              style: AppTextStyles.label.copyWith(fontSize: AppFontSizes.s15),
             ),
           ),
         ),
         const SizedBox(height: 32),
-        FadeSlideIn(
-          delay: const Duration(milliseconds: 100),
-          child: const Text('Tiền đầu ca', style: AppTextStyles.label),
+        const FadeSlideIn(
+          delay: Duration(milliseconds: 100),
+          child: Text('Tiền đầu ca', style: AppTextStyles.label),
         ),
         const SizedBox(height: 8),
         FadeSlideIn(
@@ -326,7 +326,7 @@ class _FormView extends StatelessWidget {
                   onSubmitted: (_) => onSubmit(),
                   cursorColor: AppColors.brand,
                   style: const TextStyle(
-                    fontSize: 36,
+                    fontSize: AppFontSizes.s36,
                     fontWeight: FontWeight.w700,
                     color: AppColors.brand,
                     height: 1.3,
@@ -334,13 +334,13 @@ class _FormView extends StatelessWidget {
                   decoration: const InputDecoration(
                     hintText: '0',
                     hintStyle: TextStyle(
-                      fontSize: 36,
+                      fontSize: AppFontSizes.s36,
                       fontWeight: FontWeight.w700,
-                      color: Color(0x330C2D32),
+                      color: AppColors.shadowMedium,
                     ),
                     suffixText: 'đ',
                     suffixStyle: TextStyle(
-                      fontSize: 28,
+                      fontSize: AppFontSizes.s28,
                       fontWeight: FontWeight.w700,
                       color: AppColors.brand,
                     ),
@@ -377,7 +377,7 @@ class _HintLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         'Nhập số tiền thực tế đang có trong két.',
-        style: AppTextStyles.body.copyWith(fontSize: 14),
+        style: AppTextStyles.body.copyWith(fontSize: AppFontSizes.s14),
       );
 }
 
@@ -391,7 +391,7 @@ class _WordsLine extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         vndInWords(amount),
         style: const TextStyle(
-          fontSize: 15,
+          fontSize: AppFontSizes.s15,
           fontWeight: FontWeight.w600,
           color: AppColors.brandAccent,
         ),
@@ -416,7 +416,7 @@ class _ErrorLine extends StatelessWidget {
             child: Text(
               message,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSizes.s14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.warningText,
               ),
@@ -443,7 +443,7 @@ class _JoinView extends StatelessWidget {
           title: 'Vào ca đang mở',
           subtitle: Text(
             'Mở lúc ${formatHm(shift.openedAt)}',
-            style: AppTextStyles.label.copyWith(fontSize: 15),
+            style: AppTextStyles.label.copyWith(fontSize: AppFontSizes.s15),
           ),
         ),
         const SizedBox(height: 32),
@@ -453,7 +453,7 @@ class _JoinView extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.warningSoft,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0x66ED6C02)),
+              border: Border.all(color: AppColors.warningOverlay),
             ),
             child: Padding(
               padding: const EdgeInsets.all(18),
@@ -473,7 +473,7 @@ class _JoinView extends StatelessWidget {
                         Text(
                           '$who đang mở',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSizes.s16,
                             fontWeight: FontWeight.w700,
                             color: AppColors.brand,
                           ),
@@ -482,7 +482,7 @@ class _JoinView extends StatelessWidget {
                         const Text(
                           'Đang có một ca mở rồi. Hãy vào ca đó để tiếp tục.',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppFontSizes.s14,
                             height: 1.4,
                             color: AppColors.brand,
                           ),

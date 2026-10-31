@@ -15,6 +15,8 @@ class FakeShopRepository implements ShopRepository {
   final acceptedInviteIds = <String>[];
   final declinedInviteIds = <String>[];
   int inviteStaffCalls = 0;
+  int myInvitesCalls = 0;
+  int teamCalls = 0;
 
   @override
   Future<void> createShop(
@@ -38,6 +40,7 @@ class FakeShopRepository implements ShopRepository {
 
   @override
   Future<List<Invite>> myInvites() async {
+    myInvitesCalls++;
     if (failure != null) throw failure!;
     return invites;
   }
@@ -57,10 +60,17 @@ class FakeShopRepository implements ShopRepository {
   }
 
   @override
-  Future<List<TeamMember>> team() async => members;
+  Future<List<TeamMember>> team() async {
+    teamCalls++;
+    if (failure != null) throw failure!;
+    return members;
+  }
 
   @override
-  Future<List<PendingInvite>> pendingInvites() async => pending;
+  Future<List<PendingInvite>> inviteHistory() async {
+    if (failure != null) throw failure!;
+    return pending;
+  }
 
   @override
   Future<void> inviteStaff({

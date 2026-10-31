@@ -4,6 +4,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/errors/failure_messages.dart';
 import '../../../core/validation/field_validator.dart';
+import '../domain/auth_models.dart';
 import '../domain/auth_repository.dart';
 
 enum RegisterStatus { editing, loading, success }
@@ -80,6 +81,7 @@ class RegisterController extends ChangeNotifier {
         fullName: fullName.trim(),
         email: cleanEmail,
         password: password,
+        accountKind: AccountKind.owner,
       );
       _registeredEmail = cleanEmail;
       _status = RegisterStatus.success;

@@ -22,7 +22,7 @@ abstract interface class ShopRepository {
 
   // ---- Chủ quán ----
   Future<List<TeamMember>> team();
-  Future<List<PendingInvite>> pendingInvites();
+  Future<List<PendingInvite>> inviteHistory();
 
   /// Mời nhân viên bằng số điện thoại (`phone` nhập thế nào cũng được, database chuẩn hóa).
   Future<void> inviteStaff({

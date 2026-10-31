@@ -27,7 +27,16 @@ String vndInWords(int amount) {
 }
 
 const _digits = [
-  'không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín',
+  'không',
+  'một',
+  'hai',
+  'ba',
+  'bốn',
+  'năm',
+  'sáu',
+  'bảy',
+  'tám',
+  'chín',
 ];
 
 String _readGroup(int n, {required bool pad}) {

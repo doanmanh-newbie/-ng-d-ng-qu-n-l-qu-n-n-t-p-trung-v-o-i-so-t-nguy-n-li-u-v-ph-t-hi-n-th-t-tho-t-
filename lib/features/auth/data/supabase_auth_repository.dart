@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthUser;
 
 import '../../../core/data/rpc_errors.dart';
@@ -43,12 +44,16 @@ class SupabaseAuthRepository implements AuthRepository {
     required String fullName,
     required String email,
     required String password,
+    required AccountKind accountKind,
   }) =>
       _guard(() async {
         final res = await _client.auth.signUp(
           email: email,
           password: password,
-          data: {'full_name': fullName},
+          data: {
+            'full_name': fullName,
+            'account_kind': accountKind.name,
+          },
         );
         // Khi bật xác nhận email, Supabase không báo lỗi nếu email đã tồn tại
         // mà trả về user không có `identities`.
@@ -90,6 +95,8 @@ class SupabaseAuthRepository implements AuthRepository {
             email: StaffCredentials.emailFor(contact),
             password: StaffCredentials.passwordFor(contact),
             data: {
+              ...StaffCredentials.demoContactMetadata(contact),
+              'account_kind': 'staff',
               'full_name': fullName,
               'birth_date': _dateOnly(birthDate),
             },
@@ -134,6 +141,47 @@ class SupabaseAuthRepository implements AuthRepository {
         }
       });
 
+  @override
+  Future<SessionContext> fetchSessionContext({String? preferredShopId}) =>
+      _guard(() async {
+        try {
+          final result = await _client.rpc(
+            'my_session_context',
+            params: {'p_preferred_shop': preferredShopId},
+          );
+          return SessionContext.fromMap(result as Map<String, dynamic>);
+        } on PostgrestException catch (e) {
+          if (e.code == 'PGRST202') {
+            throw const MissingRpcFailure('my_session_context');
+          }
+          rethrow;
+        }
+      });
+
+  @override
+  Future<void> selectShop(String shopId) => _guard(() async {
+        await _client.rpc('select_shop', params: {'p_shop': shopId});
+        await rememberShop(shopId);
+      });
+
+  @override
+  Future<String?> lastActiveShopId() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return null;
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getString(_lastShopKey(userId));
+  }
+
+  @override
+  Future<void> rememberShop(String shopId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_lastShopKey(userId), shopId);
+  }
+
+  String _lastShopKey(String userId) => 'fore.last_active_shop.$userId';
+
   AuthUser _toAuthUser(User user) {
     final email = user.email ?? '';
     // Tài khoản nhân viên đăng ký bằng số điện thoại có email giả: hiện lại là số điện thoại.
@@ -144,11 +192,11 @@ class SupabaseAuthRepository implements AuthRepository {
       phone: phoneFromEmail ?? user.phone ?? '',
       displayName: (user.userMetadata?['full_name'] as String?) ?? '',
       birthDate: (user.userMetadata?['birth_date'] as String?) ?? '',
+      accountKind: AccountKind.parse(user.userMetadata?['account_kind']),
     );
   }
 
-  static String _dateOnly(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
+  static String _dateOnly(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
 
@@ -182,7 +230,8 @@ class SupabaseAuthRepository implements AuthRepository {
       // Lỗi từ database (không phải đăng nhập): mã nghiệp vụ thì có câu tiếng Việt, còn lại ghi log.
       final mapped = mapPostgrestError(message: e.message, code: e.code);
       if (mapped is UnknownFailure) {
-        debugPrint('Fore auth: lỗi database code=${e.code} message=${e.message}');
+        debugPrint(
+            'Fore auth: lỗi database code=${e.code} message=${e.message}');
       }
       throw mapped;
     } on SocketException {
@@ -230,7 +279,8 @@ class SupabaseAuthRepository implements AuthRepository {
     }
     if (code == 'email_not_confirmed') return const EmailNotConfirmedFailure();
     // Ghi nguyên nhân thật ra log (terminal của `flutter run` hoặc Console của trình duyệt).
-    debugPrint('Fore auth: lỗi chưa nhận diện code=$code status=${e.statusCode} '
+    debugPrint(
+        'Fore auth: lỗi chưa nhận diện code=$code status=${e.statusCode} '
         'message=${e.message}');
     return UnknownFailure(e);
   }

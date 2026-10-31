@@ -41,7 +41,7 @@ class IngredientField extends StatelessWidget {
                 ? 'Chạm để chọn'
                 : '${value!.name} (${value!.unitLabel})',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: AppFontSizes.s16,
               color: value == null ? AppColors.textMuted : AppColors.ink,
               fontWeight: value == null ? FontWeight.w400 : FontWeight.w600,
             ),

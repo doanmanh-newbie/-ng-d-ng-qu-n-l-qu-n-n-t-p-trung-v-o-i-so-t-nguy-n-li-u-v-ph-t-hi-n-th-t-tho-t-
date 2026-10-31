@@ -7,7 +7,9 @@ import '../../../core/errors/failure_messages.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/fade_slide_in.dart';
+import '../../../core/widgets/fore_card.dart';
 import '../../../core/widgets/fore_button.dart';
+import '../../../core/widgets/empty_state.dart' show ErrorRetry;
 import '../../auth/application/session_controller.dart';
 import '../../shift/application/shift_controller.dart';
 import '../application/inbox_controller.dart';
@@ -47,12 +49,12 @@ Future<void> acceptAndEnter(BuildContext context, Invite invite) async {
     await showGeneralDialog<void>(
       context: navigator.context,
       barrierDismissible: false,
-      barrierColor: const Color(0xDB0C2D32),
+      barrierColor: AppColors.shadowStrong,
       transitionDuration: const Duration(milliseconds: 260),
       pageBuilder: (_, __, ___) => _JoinedDialog(shopName: invite.shopName),
     );
   }
-  final next = AppRoutes.routeFor(session.state, ownerIntent: false);
+  final next = AppRoutes.routeFor(session.state);
   if (next != null) navigator.pushNamedAndRemoveUntil(next, (_) => false);
 }
 
@@ -111,8 +113,8 @@ class _JoinedDialogState extends State<_JoinedDialog> {
                 child: Text(
                   widget.shopName,
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.display
-                      .copyWith(color: Colors.white, fontSize: 34),
+                  style: AppTextStyles.display.copyWith(
+                      color: Colors.white, fontSize: AppFontSizes.s34),
                 ),
               ),
               const SizedBox(height: 8),
@@ -187,7 +189,7 @@ class _InviteListViewState extends State<InviteListView> {
               child: Center(child: CircularProgressIndicator()),
             )
           else if (c.error != null && c.invites.isEmpty)
-            _Note(icon: Icons.wifi_off_rounded, text: c.error!)
+            ErrorRetry(message: c.error!, onRetry: () => c.load())
           else if (c.invites.isEmpty)
             _Note(
               icon: Icons.mail_outline_rounded,

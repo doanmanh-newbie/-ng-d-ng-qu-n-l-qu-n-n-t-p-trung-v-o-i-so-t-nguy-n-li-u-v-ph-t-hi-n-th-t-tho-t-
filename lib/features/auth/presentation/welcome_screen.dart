@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/app_routes.dart';
@@ -10,6 +11,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/brand_logo.dart';
 import '../../../core/widgets/loading_button.dart';
+import '../../shift/application/shift_controller.dart';
+import '../../shop/application/auto_join.dart';
+import '../../shop/domain/shop_repository.dart';
 import '../application/login_controller.dart';
 import '../application/session_controller.dart';
 import 'forgot_password_dialog.dart';
@@ -37,13 +41,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   String? _sessionError;
 
   @override
-  void initState() {
-    super.initState();
-    // Khớp với công tắc đang ở "Nhân viên" (đăng xuất rồi quay lại thì không nhớ vai trò cũ).
-    context.read<SessionController>().ownerIntent = false;
-  }
-
-  @override
   void dispose() {
     _email.dispose();
     _password.dispose();
@@ -52,7 +49,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   void _pick(_Mode mode) {
     if (mode == _mode) return;
-    context.read<SessionController>().ownerIntent = mode == _Mode.owner;
     setState(() {
       _mode = mode;
       _sessionError = null;
@@ -63,14 +59,29 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Future<void> _afterSignIn() async {
     final navigator = Navigator.of(context);
     final session = context.read<SessionController>();
-    final failure = await session.refreshAfterSignIn();
+    final shops = context.read<ShopRepository>();
+    final shift = context.read<ShiftController>();
+    var failure = await session.refreshAfterSignIn();
     if (!mounted) return;
     if (failure != null) {
-      setState(() => _sessionError = failure.userMessage);
+      final message = failure.userMessage;
+      setState(() => _sessionError = message);
       return;
     }
-    final next =
-        AppRoutes.routeFor(session.state, ownerIntent: session.ownerIntent);
+    // Nhân viên chưa thuộc quán nào mà chủ đã mời: vào quán luôn (chế độ thử nghiệm).
+    if (session.state is SessionAwaitingInvite) {
+      if (await autoJoinSingleInvite(shops)) {
+        failure = await session.refreshAfterSignIn();
+        if (!mounted) return;
+        if (failure != null) {
+          final message = failure.userMessage;
+          setState(() => _sessionError = message);
+          return;
+        }
+        shift.load();
+      }
+    }
+    final next = AppRoutes.routeFor(session.state);
     if (next != null) navigator.pushNamedAndRemoveUntil(next, (_) => false);
   }
 
@@ -131,6 +142,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 },
               ),
               const SizedBox(height: 24),
+              if (kDebugMode)
+                TextButton.icon(
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed(AppRoutes.designGallery),
+                  icon: const Icon(Icons.palette_outlined),
+                  label: const Text('Xem thư viện giao diện'),
+                ),
             ],
           ),
         ),
@@ -276,7 +294,8 @@ class _PasswordForm extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             c.formError ?? sessionError!,
-            style: const TextStyle(color: AppColors.statusOff, fontSize: 13),
+            style: const TextStyle(
+                color: AppColors.statusOff, fontSize: AppFontSizes.s13),
           ),
         ],
         const SizedBox(height: 20),
@@ -318,7 +337,8 @@ class _StaffForm extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             sessionError!,
-            style: const TextStyle(color: AppColors.statusOff, fontSize: 13),
+            style: const TextStyle(
+                color: AppColors.statusOff, fontSize: AppFontSizes.s13),
           ),
         ],
       ],

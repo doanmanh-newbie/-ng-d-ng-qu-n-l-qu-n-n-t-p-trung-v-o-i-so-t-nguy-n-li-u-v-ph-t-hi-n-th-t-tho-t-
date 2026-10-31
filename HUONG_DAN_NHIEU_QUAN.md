@@ -1,15 +1,17 @@
 # Fore — bản nhiều quán (chủ / nhân viên)
 
 ## 1. Database (Supabase → SQL Editor)
-Bản cũ chỉ có 1 quán nên **phải dựng lại** (dữ liệu thử sẽ mất; tài khoản đăng nhập vẫn còn):
-1. Chạy `database/dev/reset_schema.sql`
-2. Chạy lần lượt `001` → `016` trong thư mục `database/`
+Bản cũ chỉ có 1 quán nên **phải dựng lại** (dữ liệu nghiệp vụ sẽ mất; tài khoản Supabase Auth vẫn còn):
+1. Chạy `database/00_reset_schema.sql` nếu bạn đã sao lưu hoặc chấp nhận xóa dữ liệu.
+2. Chạy lần lượt `database/01_foundation.sql` → `02_operations_reconciliation.sql` → `03_read_apis.sql` → `04_membership_sessions.sql`.
+
+Đây là bốn nhóm SQL hiện hành. Các bản trong `database/install/` và `database/dev/rebuild_test_database.sql` được sinh từ bốn nhóm này bằng `tool/build_install.sh`; không sửa trực tiếp các bản sinh.
 
 Sau đó **không còn** hàm `claim_first_owner` / `link_staff_account`. Chủ quán tự tạo quán trong app; nhân viên được mời bằng số điện thoại.
 
 ## 2. Đăng nhập đơn giản để thử (Supabase → Authentication)
 Hiện **không có mã xác nhận (OTP)**. Cần đúng một cài đặt: **Providers → Email → TẮT "Confirm email"**, để đăng ký xong vào được ngay.
-Đừng bật Phone/SMS, không cần. Chạy thêm `database/015_simple_staff_login.sql` và `016_audit_actor_same_shop.sql` sau `014`.
+Đừng bật Phone/SMS, không cần. Đăng nhập thử bằng điện thoại/email được cấu hình trong nhóm `04_membership_sessions.sql`.
 
 ## 3. Luồng sử dụng
 - Màn đầu: **Chủ quán** hoặc **Nhân viên** (công tắc ngay trên form đăng nhập).

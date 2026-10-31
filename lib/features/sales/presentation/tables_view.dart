@@ -13,6 +13,7 @@ import '../../../core/widgets/ops_icon.dart';
 import '../../../core/widgets/fore_sheet.dart';
 import '../../../core/widgets/notify.dart';
 import '../../../core/widgets/pressable_scale.dart';
+import '../../../core/widgets/status_chip.dart';
 import '../application/table_map_controller.dart';
 import '../domain/sales_models.dart';
 
@@ -95,6 +96,8 @@ class _TablesViewState extends State<TablesView> {
           }
           final area = c.selectedArea!;
           final visible = c.visibleTables;
+          final textScale = MediaQuery.textScalerOf(context).scale(1);
+          final tableCardExtent = 112.0 + (textScale - 1).clamp(0.0, 0.8) * 136;
           return RefreshIndicator(
             onRefresh: c.load,
             child: CustomScrollView(
@@ -108,7 +111,8 @@ class _TablesViewState extends State<TablesView> {
                       child: Text(
                         'Đang hiện dữ liệu cũ vì mất kết nối. Kéo xuống để thử lại.',
                         style: TextStyle(
-                            fontSize: 12, color: AppColors.statusWatch),
+                            fontSize: AppFontSizes.s12,
+                            color: AppColors.statusWatch),
                       ),
                     ),
                   ),
@@ -138,12 +142,11 @@ class _TablesViewState extends State<TablesView> {
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     sliver: SliverGrid.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         mainAxisSpacing: 12,
                         crossAxisSpacing: 12,
-                        mainAxisExtent: 112,
+                        mainAxisExtent: tableCardExtent,
                       ),
                       itemCount: visible.length,
                       itemBuilder: (_, i) => _TableCard(
@@ -243,7 +246,7 @@ class _AreaChip extends StatelessWidget {
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFontSizes.s15,
                   fontWeight: FontWeight.w700,
                   color: selected ? Colors.white : AppColors.ink,
                 ),
@@ -309,43 +312,31 @@ class _TableCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            fontSize: 18,
+                            fontSize: AppFontSizes.s18,
                             fontWeight: FontWeight.w700,
                             color: fg),
                       ),
                     ),
                     if (showArea)
                       Text(slot.areaName,
-                          style: TextStyle(fontSize: 12, color: sub)),
+                          style: TextStyle(
+                              fontSize: AppFontSizes.s12, color: sub)),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: busy
-                                ? AppColors.brandAccent
-                                : AppColors.statusOk,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          status,
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: fg),
-                        ),
-                      ],
+                    StatusChip(
+                      label: status,
+                      severity: busy
+                          ? StatusSeverity.neutral
+                          : StatusSeverity.healthy,
+                      compact: true,
                     ),
                     const SizedBox(height: 2),
-                    Text(detail, style: TextStyle(fontSize: 14, color: sub)),
+                    Text(detail,
+                        style:
+                            TextStyle(fontSize: AppFontSizes.s14, color: sub)),
                   ],
                 ),
               ],
@@ -410,6 +401,8 @@ class _RoundIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => IconButton.filledTonal(
+        tooltip:
+            icon == Icons.remove_rounded ? 'Giảm số khách' : 'Tăng số khách',
         onPressed: onTap,
         icon: Icon(icon),
         style: IconButton.styleFrom(

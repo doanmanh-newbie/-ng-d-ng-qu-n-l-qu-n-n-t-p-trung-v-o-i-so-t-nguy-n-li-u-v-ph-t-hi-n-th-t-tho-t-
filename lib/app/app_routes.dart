@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
 import '../features/auth/application/login_controller.dart';
@@ -20,6 +21,8 @@ import '../features/shop/presentation/create_shop_screen.dart';
 import '../features/shop/presentation/empty_space_screen.dart';
 import '../features/shop/presentation/inbox_screen.dart';
 import '../features/shop/presentation/team_screen.dart';
+import '../features/auth/presentation/membership_revoked_screen.dart';
+import '../core/design/gallery_screen.dart';
 
 /// Tên các màn hình. Đi tới màn nào thì dùng hằng ở đây, không gõ chuỗi rời.
 abstract final class AppRoutes {
@@ -33,18 +36,23 @@ abstract final class AppRoutes {
   static const createShop = '/create-shop';
   static const inbox = '/inbox';
   static const team = '/team';
+  static const membershipRevoked = '/membership-revoked';
+  static const designGallery = '/__design';
 
   /// Đăng nhập xong thì đi đâu. `null` = chưa quyết được (đang kiểm tra / mất mạng).
-  static String? routeFor(SessionState state, {bool ownerIntent = false}) =>
-      switch (state) {
+  static String? routeFor(SessionState state) => switch (state) {
         SessionChecking() || SessionOffline() => null,
         SessionSignedOut() => welcome,
-        SessionSignedIn() => home,
-        SessionNoShop() => ownerIntent ? createShop : emptySpace,
+        SessionReady() => home,
+        SessionNeedsShop() => createShop,
+        SessionAwaitingInvite() => emptySpace,
+        SessionMembershipRevoked() => membershipRevoked,
       };
 
   static Route<dynamic> generate(RouteSettings settings) {
     final Widget page = switch (settings.name) {
+      designGallery =>
+        kDebugMode ? const DesignGalleryScreen() : const SplashScreen(),
       splash => const SplashScreen(),
       welcome => MultiProvider(
           providers: [
@@ -75,13 +83,18 @@ abstract final class AppRoutes {
         ),
       createShop => const CreateShopScreen(),
       inbox => ChangeNotifierProvider(
-          create: (ctx) => InboxController(ctx.read<ShopRepository>())..load(),
+          // A member can receive an invite to another shop while already
+          // working in this one. Keep the inbox fresh while it is open.
+          create: (ctx) => InboxController(ctx.read<ShopRepository>())
+            ..load()
+            ..startPolling(),
           child: const InboxScreen(),
         ),
       team => ChangeNotifierProvider(
-          create: (ctx) => TeamController(ctx.read<ShopRepository>())..load(),
+          create: (ctx) => TeamController(ctx.read<ShopRepository>()),
           child: const TeamScreen(),
         ),
+      membershipRevoked => const MembershipRevokedScreen(),
       _ => const SplashScreen(),
     };
 

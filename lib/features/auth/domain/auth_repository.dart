@@ -19,7 +19,17 @@ abstract interface class AuthRepository {
     required String fullName,
     required String email,
     required String password,
+    required AccountKind accountKind,
   });
+
+  /// Đọc vai trò khởi tạo, thành viên, quán hiện tại và lời mời từ máy chủ.
+  Future<SessionContext> fetchSessionContext({String? preferredShopId});
+
+  /// Chọn quán; máy chủ xác minh người dùng còn là thành viên hoạt động.
+  Future<void> selectShop(String shopId);
+
+  Future<String?> lastActiveShopId();
+  Future<void> rememberShop(String shopId);
 
   /// Đăng nhập nhân viên chỉ bằng số điện thoại hoặc email (xem `StaffCredentials`).
   /// Chưa có tài khoản thì ném `StaffNotFoundFailure`.

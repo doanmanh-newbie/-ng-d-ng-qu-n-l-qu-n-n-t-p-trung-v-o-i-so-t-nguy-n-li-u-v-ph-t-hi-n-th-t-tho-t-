@@ -6,12 +6,10 @@ import '../../../core/errors/app_failure.dart';
 import '../domain/auth_models.dart';
 import '../domain/auth_repository.dart';
 
-/// Trạng thái phiên làm việc. `sealed`: màn hình phải xử lý đủ mọi trạng thái.
 sealed class SessionState {
   const SessionState();
 }
 
-/// Đang kiểm tra đăng nhập đã lưu (màn Splash).
 class SessionChecking extends SessionState {
   const SessionChecking();
 }
@@ -20,30 +18,50 @@ class SessionSignedOut extends SessionState {
   const SessionSignedOut();
 }
 
-class SessionSignedIn extends SessionState {
-  const SessionSignedIn(this.profile);
-
-  final Profile profile;
-}
-
-/// Đăng nhập được nhưng chưa thuộc quán nào: nhân viên chờ lời mời trong hộp thư,
-/// hoặc chủ quán chưa tạo quán.
-class SessionNoShop extends SessionState {
-  const SessionNoShop(this.contact, {this.displayName = ''});
-
-  /// Số điện thoại hoặc email của tài khoản (hiện cho người dùng nhận ra mình).
-  final String contact;
-
-  /// Tên hiển thị người dùng đã nhập (có thể rỗng).
-  final String displayName;
-}
-
-/// Không kiểm tra được vì không có mạng hoặc quá thời gian chờ.
 class SessionOffline extends SessionState {
   const SessionOffline();
 }
 
-/// Giữ phiên làm việc của cả app. Các màn hình lắng nghe đối tượng này.
+/// Đã đăng nhập nhưng chưa có thành viên quán; tài khoản này cần tạo quán.
+class SessionNeedsShop extends SessionState {
+  const SessionNeedsShop(this.user, this.context);
+
+  final AuthUser user;
+  final SessionContext context;
+}
+
+/// Nhân viên chưa được thêm vào quán; hộp thư lời mời vẫn khả dụng.
+class SessionAwaitingInvite extends SessionState {
+  const SessionAwaitingInvite(this.user, this.context);
+
+  final AuthUser user;
+  final SessionContext context;
+}
+
+/// Tài khoản từng có quán gần nhất nhưng server không còn membership hoạt động.
+class SessionMembershipRevoked extends SessionState {
+  const SessionMembershipRevoked(this.user, this.previousShopId);
+
+  final AuthUser user;
+  final String previousShopId;
+}
+
+/// Quyền hiện tại luôn đến từ membership của quán đang chọn trên máy chủ.
+class SessionReady extends SessionState {
+  const SessionReady(
+    this.profile, {
+    this.shops = const [],
+    this.pendingInviteCount = 0,
+  });
+
+  final Profile profile;
+  final List<SessionShop> shops;
+  final int pendingInviteCount;
+}
+
+/// Tương thích với các widget cũ trong lúc P2 được chuyển đổi dần.
+typedef SessionSignedIn = SessionReady;
+
 class SessionController extends ChangeNotifier {
   SessionController(
     this._repository, {
@@ -52,26 +70,12 @@ class SessionController extends ChangeNotifier {
   });
 
   final AuthRepository _repository;
-
-  /// Splash hiện tối thiểu bấy lâu, kể cả khi kiểm tra xong sớm.
-  /// Bằng thời lượng chuyển động logo (1400 ms) để hoạt ảnh không bị cắt giữa chừng.
   final Duration minVisible;
-
-  /// Quá bấy lâu thì coi như không có mạng.
   final Duration timeout;
 
   SessionState _state = const SessionChecking();
   SessionState get state => _state;
 
-  /// Người dùng chọn "Chủ quán" ở màn đầu. Chỉ dùng để quyết định đi đâu khi chưa có quán
-  /// (chủ -> màn Tạo quán; nhân viên -> không gian nhân viên chờ lời mời).
-  /// Quyền thật luôn do database quyết định theo vai trò trong từng quán.
-  bool ownerIntent = false;
-
-  /// Kiểm tra đăng nhập đã lưu. Gọi khi mở app và khi bấm "Thử lại".
-  ///
-  /// `skipMinWait`: bỏ thời gian hiện tối thiểu (dùng khi người dùng tắt hoạt ảnh,
-  /// không cần chờ cho xem hết chuyển động).
   Future<void> restore({bool skipMinWait = false}) async {
     _set(const SessionChecking());
     final minDelay =
@@ -84,35 +88,37 @@ class SessionController extends ChangeNotifier {
     } on NoNetworkFailure {
       next = const SessionOffline();
     } on AppFailure {
-      // Lỗi lạ: cho đăng nhập lại thay vì kẹt ở splash.
       next = const SessionSignedOut();
     }
     await minDelay;
     _set(next);
   }
 
-  /// Gọi sau khi đăng nhập thành công (hoặc bấm "Kiểm tra lại") để tải hồ sơ.
-  ///
-  /// Trả về `null` nếu xong. Nếu lỗi (mất mạng, lỗi máy chủ...) trả về lỗi đó để
-  /// màn hình hiện cho người dùng, và giữ nguyên trạng thái cũ.
   Future<AppFailure?> refreshAfterSignIn() async {
     try {
       _set(await _resolve());
       return null;
-    } on AppFailure catch (f) {
-      return f;
+    } on AppFailure catch (failure) {
+      return failure;
     }
   }
 
-  /// Trả về `null` nếu đăng xuất xong; nếu lỗi (ví dụ mất mạng) thì giữ nguyên
-  /// trạng thái và trả về lỗi để màn hình báo cho người dùng.
+  Future<AppFailure?> chooseShop(String shopId) async {
+    try {
+      await _repository.selectShop(shopId);
+      _set(await _resolve());
+      return null;
+    } on AppFailure catch (failure) {
+      return failure;
+    }
+  }
+
   Future<AppFailure?> signOut() async {
     try {
       await _repository.signOut();
-    } on AppFailure catch (f) {
-      return f;
+    } on AppFailure catch (failure) {
+      return failure;
     }
-    ownerIntent = false;
     _set(const SessionSignedOut());
     return null;
   }
@@ -120,11 +126,51 @@ class SessionController extends ChangeNotifier {
   Future<SessionState> _resolve() async {
     final user = _repository.currentUser;
     if (user == null) return const SessionSignedOut();
-    final profile = await _repository.fetchProfile();
-    if (profile == null || !profile.active) {
-      return SessionNoShop(user.contact, displayName: user.displayName);
+
+    final preferredShopId = await _repository.lastActiveShopId();
+    final context = await _repository.fetchSessionContext(
+      preferredShopId: preferredShopId,
+    );
+    final currentShop = context.currentShop;
+    if (currentShop != null && currentShop.active) {
+      await _repository.rememberShop(currentShop.shopId);
+      return SessionReady(
+        currentShop.profile,
+        shops: context.shops,
+        pendingInviteCount: context.pendingInviteCount,
+      );
     }
-    return SessionSignedIn(profile);
+
+    // Defensive recovery for older server records with members but no selected shop.
+    if (context.shops.isNotEmpty) {
+      final membership = context.shops.firstWhere((shop) => shop.active);
+      await _repository.selectShop(membership.shopId);
+      final refreshed = await _repository.fetchSessionContext(
+        preferredShopId: membership.shopId,
+      );
+      final selected = refreshed.currentShop;
+      if (selected != null && selected.active) {
+        await _repository.rememberShop(selected.shopId);
+        return SessionReady(
+          selected.profile,
+          shops: refreshed.shops,
+          pendingInviteCount: refreshed.pendingInviteCount,
+        );
+      }
+    }
+
+    if (preferredShopId != null &&
+        context.pendingInviteCount == 0 &&
+        context.accountKind == AccountKind.staff) {
+      return SessionMembershipRevoked(user, preferredShopId);
+    }
+
+    return switch (context.accountKind) {
+      AccountKind.owner => SessionNeedsShop(user, context),
+      AccountKind.staff ||
+      AccountKind.unknown =>
+        SessionAwaitingInvite(user, context),
+    };
   }
 
   void _set(SessionState next) {

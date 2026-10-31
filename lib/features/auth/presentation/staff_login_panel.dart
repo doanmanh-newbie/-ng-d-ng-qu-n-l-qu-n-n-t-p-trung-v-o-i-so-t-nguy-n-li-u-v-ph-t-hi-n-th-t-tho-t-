@@ -73,7 +73,8 @@ class _StaffLoginPanelState extends State<StaffLoginPanel> {
           const SizedBox(height: 12),
           Text(
             c.formError!,
-            style: const TextStyle(color: AppColors.statusOff, fontSize: 13),
+            style: const TextStyle(
+                color: AppColors.statusOff, fontSize: AppFontSizes.s13),
           ),
         ],
         const SizedBox(height: 20),

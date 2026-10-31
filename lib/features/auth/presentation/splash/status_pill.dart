@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import 'splash_timeline.dart';
+import 'package:fore/core/design/typography.dart';
 
 /// Viên thuốc nhỏ dưới logo: "ĐANG KẾT NỐI" (nhấp nháy nhẹ) hoặc "MẤT KẾT NỐI" (đứng yên).
 class StatusPill extends StatelessWidget {
@@ -48,7 +49,7 @@ class StatusPill extends StatelessWidget {
               child: Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFontSizes.s11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                   color: AppColors.textSecondary,

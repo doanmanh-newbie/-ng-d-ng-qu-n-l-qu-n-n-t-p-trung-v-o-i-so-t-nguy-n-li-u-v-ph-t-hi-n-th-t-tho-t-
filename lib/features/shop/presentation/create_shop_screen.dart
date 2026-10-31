@@ -35,7 +35,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   void initState() {
     super.initState();
     final state = context.read<SessionController>().state;
-    if (state is SessionNoShop) _owner.text = state.displayName;
+    if (state is SessionNeedsShop) _owner.text = state.user.displayName;
     if (state is SessionSignedIn) _owner.text = state.profile.fullName;
   }
 
@@ -126,7 +126,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                   Text(
                     _formError!,
                     style: const TextStyle(
-                        color: AppColors.statusOff, fontSize: 13),
+                        color: AppColors.statusOff, fontSize: AppFontSizes.s13),
                   ),
                 ],
                 const SizedBox(height: 24),

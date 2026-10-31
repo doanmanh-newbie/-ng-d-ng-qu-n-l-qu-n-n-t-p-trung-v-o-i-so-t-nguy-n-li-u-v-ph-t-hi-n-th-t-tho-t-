@@ -9,6 +9,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/fore_card.dart';
 import '../../../core/widgets/notify.dart';
 import '../../../core/widgets/screen_header.dart';
+import '../../../core/widgets/status_chip.dart';
 import '../application/stocktake_controller.dart';
 import '../domain/stocktake_models.dart';
 import '../domain/stocktake_repository.dart';
@@ -74,8 +75,9 @@ class _StocktakeScreenState extends State<StocktakeScreen> {
           canPop: !_c.hasPending,
           onPopInvokedWithResult: (didPop, _) async {
             if (didPop) return;
-            if (await _confirmLeave() && context.mounted)
+            if (await _confirmLeave() && context.mounted) {
               Navigator.of(context).pop();
+            }
           },
           child: Scaffold(
             backgroundColor: AppColors.background,
@@ -110,54 +112,87 @@ class _StocktakeScreenState extends State<StocktakeScreen> {
         message: 'Chủ quán cần thêm nguyên liệu trước khi kiểm kê.',
       );
     }
+    final dailyItems = _c.dailyItems;
+    final weeklyItems = _c.weeklyItems;
     final progress = _c.dailyTotal == 0 ? 1.0 : _c.dailyCounted / _c.dailyTotal;
     return RefreshIndicator(
       onRefresh: _c.load,
-      child: ListView(
+      child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        children: [
-          ForeCard(
-            radius: 20,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            sliver: SliverToBoxAdapter(
+              child: ForeCard(
+                radius: 20,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Expanded(
-                        child:
-                            Text('Tiến độ', style: AppTextStyles.bodyStrong)),
-                    Text('Đã đếm ${_c.dailyCounted}/${_c.dailyTotal}',
-                        style: AppTextStyles.captionStrong),
+                    Row(
+                      children: [
+                        const Expanded(
+                            child: Text('Tiến độ',
+                                style: AppTextStyles.bodyStrong)),
+                        Text('Đã đếm ${_c.dailyCounted}/${_c.dailyTotal}',
+                            style: AppTextStyles.captionStrong),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 8,
+                        backgroundColor: AppColors.surfaceTint,
+                        color: AppColors.ink,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: AppColors.surfaceTint,
-                    color: AppColors.ink,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 18),
-          const Text('Cần đếm', style: AppTextStyles.headline),
-          const SizedBox(height: 10),
-          for (final item in _c.dailyItems) _row(item),
-          if (_c.weeklyItems.isNotEmpty) ...[
-            const SizedBox(height: 18),
-            const Text('Kiểm theo tuần', style: AppTextStyles.headline),
-            const SizedBox(height: 2),
-            const Text('Không bắt buộc đếm lúc cuối ca.',
-                style: AppTextStyles.caption),
-            const SizedBox(height: 10),
-            for (final item in _c.weeklyItems) _row(item),
-          ],
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(16, 18, 16, 0),
+            sliver: SliverToBoxAdapter(
+                child: Text('Cần đếm', style: AppTextStyles.headline)),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => _row(dailyItems[index]),
+                childCount: dailyItems.length,
+              ),
+            ),
+          ),
+          if (weeklyItems.isNotEmpty) ...[
+            const SliverPadding(
+              padding: EdgeInsets.fromLTRB(16, 18, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Kiểm theo tuần', style: AppTextStyles.headline),
+                    SizedBox(height: 2),
+                    Text('Không bắt buộc đếm lúc cuối ca.',
+                        style: AppTextStyles.caption),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _row(weeklyItems[index]),
+                  childCount: weeklyItems.length,
+                ),
+              ),
+            ),
+          ] else
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
     );
@@ -249,7 +284,7 @@ class _CountRowState extends State<_CountRow> {
                 Text(
                   item.name,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: AppFontSizes.s16,
                     fontWeight:
                         item.important ? FontWeight.w700 : FontWeight.w500,
                     color: AppColors.ink,
@@ -289,10 +324,11 @@ class _CountRowState extends State<_CountRow> {
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      const Icon(Icons.check_circle_rounded,
-                          color: AppColors.statusOk, size: 20),
-                      const SizedBox(width: 6),
-                      const Text('Đã đếm', style: AppTextStyles.bodyStrong),
+                      const StatusChip(
+                        label: 'Đã đếm',
+                        severity: StatusSeverity.healthy,
+                        compact: true,
+                      ),
                       TextButton(
                           onPressed: widget.enabled ? widget.onRecount : null,
                           child: const Text('Đếm lại')),

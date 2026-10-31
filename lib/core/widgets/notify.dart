@@ -17,7 +17,8 @@ void showNotice(BuildContext context, String message) {
 
 /// Chạy một thao tác của controller; lỗi nghiệp vụ được báo bằng thanh thông báo thay vì làm sập.
 /// Trả `null` nếu có lỗi hoặc thao tác bị bỏ qua (đang bận).
-Future<T?> guarded<T>(BuildContext context, Future<T?> Function() action) async {
+Future<T?> guarded<T>(
+    BuildContext context, Future<T?> Function() action) async {
   try {
     return await action();
   } on AppFailure catch (f) {

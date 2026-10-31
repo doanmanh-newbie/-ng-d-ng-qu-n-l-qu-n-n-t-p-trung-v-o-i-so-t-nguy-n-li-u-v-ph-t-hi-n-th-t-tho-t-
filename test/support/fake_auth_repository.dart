@@ -8,6 +8,8 @@ import 'package:fore/features/auth/domain/staff_contact.dart';
 class FakeAuthRepository implements AuthRepository {
   AuthUser? user;
   Profile? profile;
+  SessionContext? sessionContext;
+  String? rememberedShopId;
   AppFailure? failure;
 
   /// Lỗi riêng cho đăng xuất (ví dụ mất mạng lúc đăng xuất).
@@ -26,12 +28,16 @@ class FakeAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    await Future<void>.delayed(delay);
+    await _wait();
     if (failure != null) throw failure!;
     if (!registered.contains(email) || password != 'matkhau123') {
       throw const InvalidCredentialsFailure();
     }
-    return user = AuthUser(id: 'u1', email: email);
+    return user = AuthUser(
+      id: 'u1',
+      email: email,
+      accountKind: AccountKind.owner,
+    );
   }
 
   @override
@@ -39,9 +45,10 @@ class FakeAuthRepository implements AuthRepository {
     required String fullName,
     required String email,
     required String password,
+    required AccountKind accountKind,
   }) async {
     signUpCalls++;
-    await Future<void>.delayed(delay);
+    await _wait();
     if (failure != null) throw failure!;
     if (registered.contains(email)) throw const EmailAlreadyRegisteredFailure();
     registered.add(email);
@@ -54,7 +61,7 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser> signInStaff(StaffContact contact) async {
-    await Future<void>.delayed(delay);
+    await _wait();
     if (failure != null) throw failure!;
     if (!staffAccounts.contains(contact.value)) {
       throw const StaffNotFoundFailure();
@@ -63,6 +70,7 @@ class FakeAuthRepository implements AuthRepository {
       id: 'staff-${contact.value}',
       email: contact.email ?? '',
       phone: contact.phone?.substring(1) ?? '',
+      accountKind: AccountKind.staff,
     );
   }
 
@@ -73,7 +81,7 @@ class FakeAuthRepository implements AuthRepository {
     required DateTime birthDate,
   }) async {
     signUpStaffCalls++;
-    await Future<void>.delayed(delay);
+    await _wait();
     if (failure != null) throw failure!;
     if (!staffAccounts.add(contact.value)) {
       throw const StaffAlreadyExistsFailure();
@@ -84,6 +92,7 @@ class FakeAuthRepository implements AuthRepository {
       phone: contact.phone?.substring(1) ?? '',
       displayName: fullName,
       birthDate: birthDate.toIso8601String().substring(0, 10),
+      accountKind: AccountKind.staff,
     );
   }
 
@@ -101,8 +110,56 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<Profile?> fetchProfile() async {
-    await Future<void>.delayed(delay);
+    await _wait();
     if (failure != null) throw failure!;
     return profile;
+  }
+
+  @override
+  Future<SessionContext> fetchSessionContext({String? preferredShopId}) async {
+    await _wait();
+    if (failure != null) throw failure!;
+    if (sessionContext != null) return sessionContext!;
+    final currentProfile = profile;
+    if (currentProfile == null || !currentProfile.active) {
+      return SessionContext(
+        accountKind: user?.accountKind ?? AccountKind.staff,
+        shops: const [],
+        pendingInviteCount: 0,
+      );
+    }
+    return SessionContext(
+      accountKind: user?.accountKind ?? AccountKind.staff,
+      shops: [
+        SessionShop(
+          shopId:
+              currentProfile.shopId.isEmpty ? 'shop-1' : currentProfile.shopId,
+          shopName: currentProfile.shopName,
+          staffId: currentProfile.staffId,
+          fullName: currentProfile.fullName,
+          role: currentProfile.role,
+          active: currentProfile.active,
+          hasPin: currentProfile.hasPin,
+          isCurrent: true,
+        ),
+      ],
+      pendingInviteCount: 0,
+    );
+  }
+
+  @override
+  Future<void> selectShop(String shopId) async {
+    if (failure != null) throw failure!;
+    rememberedShopId = shopId;
+  }
+
+  @override
+  Future<String?> lastActiveShopId() async => rememberedShopId;
+
+  @override
+  Future<void> rememberShop(String shopId) async => rememberedShopId = shopId;
+
+  Future<void> _wait() async {
+    if (delay > Duration.zero) await Future<void>.delayed(delay);
   }
 }

@@ -69,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen>
     } else if (state is SessionChecking) {
       _timeline.resumeLoop();
     }
-    final next = AppRoutes.routeFor(state, ownerIntent: _session.ownerIntent);
+    final next = AppRoutes.routeFor(state);
     if (next == null) return;
     _left = true;
     Navigator.of(context).pushReplacementNamed(next);
@@ -166,9 +166,8 @@ class _Content extends StatelessWidget {
         children: [
           SizedBox(height: topReserve),
           StatusPill(
-            label: offline
-                ? SplashStrings.disconnected
-                : SplashStrings.connecting,
+            label:
+                offline ? SplashStrings.disconnected : SplashStrings.connecting,
             loop: timeline.loop,
             active: !offline,
           ),

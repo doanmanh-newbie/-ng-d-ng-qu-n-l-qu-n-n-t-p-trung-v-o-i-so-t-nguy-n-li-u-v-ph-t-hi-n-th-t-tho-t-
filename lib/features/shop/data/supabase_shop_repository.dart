@@ -49,16 +49,19 @@ class SupabaseShopRepository implements ShopRepository {
 
   @override
   Future<void> acceptInvite(String inviteId) => _guard(() async {
+        await _expireInvites();
         await _client.rpc('accept_invite', params: {'p_invite': inviteId});
       });
 
   @override
   Future<void> declineInvite(String inviteId) => _guard(() async {
+        await _expireInvites();
         await _client.rpc('decline_invite', params: {'p_invite': inviteId});
       });
 
   @override
   Future<List<TeamMember>> team() => _guard(() async {
+        await _expireInvites();
         final rows = await _client.rpc('shop_team') as List<dynamic>;
         return [
           for (final r in rows) TeamMember.fromMap(r as Map<String, dynamic>),
@@ -66,17 +69,29 @@ class SupabaseShopRepository implements ShopRepository {
       });
 
   @override
-  Future<List<PendingInvite>> pendingInvites() => _guard(() async {
+  Future<List<PendingInvite>> inviteHistory() => _guard(() async {
+        await _expireInvites();
         final rows = await _client
             .from('shop_invites')
-            .select('id, phone, email, full_name, created_at')
-            .eq('status', 'pending')
+            .select(
+                'id, phone, email, full_name, created_at, status, responded_at')
             .order('created_at', ascending: false) as List<dynamic>;
         return [
-          for (final r in rows)
+          for (final r in rows.where((row) => row['status'] != 'cancelled'))
             PendingInvite.fromMap(r as Map<String, dynamic>),
         ];
       });
+
+  Future<void> _expireInvites() async {
+    try {
+      await _client.rpc('expire_my_invites');
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST202') {
+        throw const MissingRpcFailure('expire_my_invites');
+      }
+      rethrow;
+    }
+  }
 
   @override
   Future<void> inviteStaff({
@@ -111,6 +126,7 @@ class SupabaseShopRepository implements ShopRepository {
       if (m.contains('INVITE_NOT_FOUND') || m.contains('NOT_FOUND')) {
         throw const InviteNotFoundFailure();
       }
+      if (m.contains('INVITE_EXPIRED')) throw const InviteExpiredFailure();
       if (m.contains('OWNER_ONLY') || m.contains('NOT_STAFF')) {
         throw const OwnerOnlyFailure();
       }

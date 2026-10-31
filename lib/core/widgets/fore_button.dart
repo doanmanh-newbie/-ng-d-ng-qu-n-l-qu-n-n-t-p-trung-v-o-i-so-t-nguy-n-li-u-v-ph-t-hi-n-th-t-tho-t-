@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'loading_button.dart';
+import 'package:fore/core/design/colors.dart';
 
 /// Nút chính của các màn nhân viên: cao 56, có bóng mực nhạt bên dưới
 /// như bản thiết kế. Bên trong là [LoadingButton] nên cũng chặn bấm hai lần.
@@ -27,7 +27,7 @@ class ForeButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.radius),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x400C2D32),
+            color: AppColors.shadowRaised,
             blurRadius: 20,
             offset: Offset(0, 8),
           ),
@@ -42,36 +42,6 @@ class ForeButton extends StatelessWidget {
           onPressed: onPressed,
         ),
       ),
-    );
-  }
-}
-
-/// Màu nền dùng chung cho thẻ trắng bo tròn của các màn nhân viên.
-class ForeCard extends StatelessWidget {
-  const ForeCard({
-    super.key,
-    required this.child,
-    this.padding = const EdgeInsets.all(24),
-  });
-
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x140C2D32),
-            blurRadius: 24,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(padding: padding, child: child),
     );
   }
 }

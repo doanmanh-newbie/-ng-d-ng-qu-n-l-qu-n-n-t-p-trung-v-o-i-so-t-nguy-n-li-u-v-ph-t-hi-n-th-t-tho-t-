@@ -5,7 +5,8 @@ import '../theme/app_text_styles.dart';
 
 /// Đầu trang của màn phụ (đẩy lên từ tab): nút quay lại, tiêu đề chữ có chân, dòng mô tả.
 class ScreenHeader extends StatelessWidget {
-  const ScreenHeader({super.key, required this.title, this.subtitle, this.onBack});
+  const ScreenHeader(
+      {super.key, required this.title, this.subtitle, this.onBack});
 
   final String title;
   final String? subtitle;
@@ -15,7 +16,12 @@ class ScreenHeader extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
         decoration: const BoxDecoration(
           color: AppColors.surface,
-          boxShadow: [BoxShadow(color: AppColors.shadowSoft, blurRadius: 18, offset: Offset(0, 6))],
+          boxShadow: [
+            BoxShadow(
+                color: AppColors.shadowSoft,
+                blurRadius: 18,
+                offset: Offset(0, 6))
+          ],
         ),
         child: SafeArea(
           bottom: false,
@@ -27,7 +33,8 @@ class ScreenHeader extends StatelessWidget {
                 IconButton(
                   tooltip: 'Quay lại',
                   onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-                  icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+                  icon: const Icon(Icons.arrow_back_rounded,
+                      color: AppColors.ink),
                 ),
                 Expanded(
                   child: Padding(

@@ -9,6 +9,9 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/loading_button.dart';
+import '../../shift/application/shift_controller.dart';
+import '../../shop/application/auto_join.dart';
+import '../../shop/domain/shop_repository.dart';
 import '../application/session_controller.dart';
 import '../application/staff_register_controller.dart';
 import '../domain/staff_contact.dart';
@@ -54,14 +57,23 @@ class _StaffRegisterScreenState extends State<StaffRegisterScreen> {
   Future<void> _enterApp() async {
     final navigator = Navigator.of(context);
     final session = context.read<SessionController>();
-    session.ownerIntent = false;
-    final failure = await session.refreshAfterSignIn();
+    final shops = context.read<ShopRepository>();
+    final shift = context.read<ShiftController>();
+    var failure = await session.refreshAfterSignIn();
     if (!mounted) return;
+    // Chủ đã mời số này từ trước: vào quán luôn (chế độ thử nghiệm).
+    if (failure == null &&
+        session.state is SessionAwaitingInvite &&
+        await autoJoinSingleInvite(shops)) {
+      failure = await session.refreshAfterSignIn();
+      if (!mounted) return;
+      if (failure == null) shift.load();
+    }
     if (failure != null) {
+      final message = failure.userMessage;
       setState(() {
         _needsRetry = true;
-        _sessionError = 'Đã tạo tài khoản nhưng chưa vào được: '
-            '${failure.userMessage}';
+        _sessionError = 'Đã tạo tài khoản nhưng chưa vào được: $message';
       });
       return;
     }
@@ -159,7 +171,7 @@ class _StaffRegisterScreenState extends State<StaffRegisterScreen> {
                   child: Text(
                     c.birthDateError!,
                     style: const TextStyle(
-                        color: AppColors.statusOff, fontSize: 12),
+                        color: AppColors.statusOff, fontSize: AppFontSizes.s12),
                   ),
                 ),
               if (c.formError != null || _sessionError != null) ...[
@@ -167,7 +179,7 @@ class _StaffRegisterScreenState extends State<StaffRegisterScreen> {
                 Text(
                   c.formError ?? _sessionError!,
                   style: const TextStyle(
-                      color: AppColors.statusOff, fontSize: 13),
+                      color: AppColors.statusOff, fontSize: AppFontSizes.s13),
                 ),
               ],
               const SizedBox(height: 24),

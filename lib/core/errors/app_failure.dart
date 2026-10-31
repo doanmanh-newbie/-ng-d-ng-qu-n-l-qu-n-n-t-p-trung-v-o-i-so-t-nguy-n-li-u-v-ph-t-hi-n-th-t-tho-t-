@@ -60,6 +60,11 @@ class InviteNotFoundFailure extends AppFailure {
   const InviteNotFoundFailure() : super('INVITE_NOT_FOUND');
 }
 
+/// Lời mời đã quá thời hạn phản hồi.
+class InviteExpiredFailure extends AppFailure {
+  const InviteExpiredFailure() : super('INVITE_EXPIRED');
+}
+
 /// Việc này chỉ chủ quán làm được.
 class OwnerOnlyFailure extends AppFailure {
   const OwnerOnlyFailure() : super('OWNER_ONLY');
@@ -97,7 +102,8 @@ class EmailConfirmRequiredFailure extends AppFailure {
 
 /// Supabase từ chối email giả của số điện thoại (tên miền bị coi là không hợp lệ). Chỉ gặp khi thử.
 class PhoneLoginDomainRejectedFailure extends AppFailure {
-  const PhoneLoginDomainRejectedFailure() : super('PHONE_LOGIN_DOMAIN_REJECTED');
+  const PhoneLoginDomainRejectedFailure()
+      : super('PHONE_LOGIN_DOMAIN_REJECTED');
 }
 
 class UnknownFailure extends AppFailure {

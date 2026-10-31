@@ -1,5 +1,5 @@
 -- Fore · dữ liệu demo cho dashboard chủ quán.
--- Chỉ chạy trên project Supabase THỬ sau khi đã cài database/001–016.
+-- Chỉ chạy trên project Supabase THỬ sau khi đã cài các nhóm SQL 01–04.
 -- Tạo một quán riêng [DEMO] Fore Dashboard và chuyển active shop sang quán đó.
 -- Không xóa hay ghi đè dữ liệu của quán hiện có. Chạy một lần trên mỗi project.
 --
@@ -110,7 +110,7 @@ begin
   insert into dining_tables (shop_id, area_id, name)
   values (v_shop, v_area, '[DEMO] Bàn 1') returning id into v_table;
 
-  -- Ba ca đã đóng để hiện báo cáo/đối soát; một ca đang mở để hiện thẻ ca hiện tại.
+  -- Ba ca đóng có đủ trạng thái xanh/vàng/đỏ, cộng một ca đang mở để demo dashboard.
   v_dates := array[
     ((now() at time zone 'Asia/Ho_Chi_Minh')::date - 3),
     ((now() at time zone 'Asia/Ho_Chi_Minh')::date - 2),
@@ -195,10 +195,22 @@ begin
         else v_start + interval '5 hours' end);
 
     if not v_is_open then
-      -- Cố ý tạo lệch tiền mặt âm 120.000đ để thẻ cảnh báo có nội dung demo.
-      update shifts set closing_cash = 500000 + v_cash - 20000 - 120000 where id = v_shift;
+      -- Tạo ba mức đối soát: đỏ -120.000đ, vàng -30.000đ, xanh -5.000đ.
+      if v_i = 2 then
+        update shifts set closing_cash = 500000 + v_cash - 20000 - 30000 where id = v_shift;
+      elsif v_i = 3 then
+        update shifts set closing_cash = 500000 + v_cash - 20000 - 5000 where id = v_shift;
+      else
+        update shifts set closing_cash = 500000 + v_cash - 20000 - 120000 where id = v_shift;
+      end if;
       for v_rec in
-        select ingredient_id, open_qty, purchase_qty, loss_qty
+        select ingredient_id, open_qty, purchase_qty,
+               case
+                 when v_i = 1 then loss_qty
+                 when v_i = 2 then case ingredient_id
+                   when v_milk then 80 when v_tea then 20 when v_pearl then 120 else 0 end
+                 else 0
+               end as loss_qty
           from (values
             (v_milk, 12000, 6000, 250),
             (v_tea, 5000, 2000, 40),
@@ -221,7 +233,7 @@ begin
   insert into shop_invites (shop_id, phone, full_name, invited_by)
   values (v_shop, '84905550123', 'Hoàng Long · Nhân viên mới', v_owner);
 
-  raise notice 'Đã tạo dữ liệu dashboard demo cho shop % (%. 3 ca đóng, 1 ca đang mở).',
+  raise notice 'Đã tạo dữ liệu dashboard demo cho shop % (%) (3 ca đóng xanh/vàng/đỏ, 1 ca đang mở).',
     v_shop, '[DEMO] Fore Dashboard';
 end
 $seed$;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../motion.dart';
 import '../theme/app_colors.dart';
 import 'ops_icon.dart';
+import 'package:fore/core/design/typography.dart';
 
 class NavItem {
   const NavItem({required this.label, required this.icon, this.enabled = true});
@@ -89,7 +91,7 @@ class _NavButton extends StatelessWidget {
           onTap: onTap,
           child: Center(
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 280),
+              duration: Motion.of(context, const Duration(milliseconds: 280)),
               curve: Curves.easeOutCubic,
               width: selected ? 82 : 64,
               height: selected ? 64 : 52,
@@ -117,7 +119,7 @@ class _NavButton extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.clip,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFontSizes.s12,
                       fontWeight: selected || item.enabled
                           ? FontWeight.w700
                           : FontWeight.w500,

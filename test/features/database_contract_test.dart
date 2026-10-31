@@ -5,9 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fore/features/inventory/data/rpc_inventory_repository.dart';
 import 'package:fore/features/sales/data/rpc_sales_repository.dart';
 import 'package:fore/features/sales/domain/sales_models.dart';
-import 'package:fore/features/ops/shift/data/rpc_shift_repository.dart';
+import 'package:fore/features/shift/operations/data/rpc_ops_shift_repository.dart';
 import 'package:fore/features/stocktake/data/rpc_stocktake_repository.dart';
 import 'package:fore/features/stocktake/domain/stocktake_models.dart';
+import 'package:fore/features/auth/domain/auth_models.dart';
+import 'package:fore/features/owner/domain/owner_dashboard_models.dart';
 
 import '../support/fakes.dart';
 
@@ -76,6 +78,76 @@ void main() {
       'add_waste': 'x',
       'add_cash_movement': 'x',
     });
+  });
+
+  test('RPC session context khớp tên hàm, tham số và payload SQL', () {
+    const expectedSessionRpc = <String, List<String>>{
+      'my_session_context': ['p_preferred_shop'],
+    };
+    final dartSource = File(
+      'lib/features/auth/data/supabase_auth_repository.dart',
+    ).readAsStringSync();
+    final migration =
+        File('database/04_membership_sessions.sql').readAsStringSync();
+    final contractSql =
+        File('database/tests/86_session_context.sql').readAsStringSync();
+
+    expect(dartSource, contains("'my_session_context',"));
+    expect(dartSource, contains("'p_preferred_shop': preferredShopId"));
+    expect(
+      migration,
+      contains('my_session_context(p_preferred_shop uuid default null)'),
+    );
+    expect(contractSql, contains('my_session_context(v_shop)'));
+    expect(expectedSessionRpc.keys.single, 'my_session_context');
+    expect(expectedSessionRpc.values.single, ['p_preferred_shop']);
+
+    final decoded = SessionContext.fromMap({
+      'account_kind': 'staff',
+      'active_shop_id': 'shop-a',
+      'pending_invite_count': 1,
+      'shops': [
+        {
+          'shop_id': 'shop-a',
+          'shop_name': 'Quán A',
+          'staff_id': 'staff-a',
+          'full_name': 'An',
+          'role': 'owner',
+          'active': true,
+          'has_pin': true,
+          'is_current': true,
+        },
+      ],
+    });
+    expect(decoded.currentShop?.role, StaffRole.owner);
+    expect(decoded.pendingInviteCount, 1);
+  });
+
+  test('RPC biểu đồ doanh thu khớp migration và model', () {
+    final source =
+        File('lib/features/owner/data/owner_dashboard_repository.dart')
+            .readAsStringSync();
+    final migration =
+        File('database/04_membership_sessions.sql').readAsStringSync();
+    final sqlTest =
+        File('database/tests/87_owner_sales_trend.sql').readAsStringSync();
+
+    expect(source, contains("'owner_sales_trend'"));
+    expect(source, contains("'p_business_start':"));
+    expect(source, contains("'p_days': 7"));
+    expect(
+      migration,
+      contains(
+          'owner_sales_trend(\n  p_business_start timestamptz,\n  p_days integer default 7'),
+    );
+    expect(sqlTest, contains('owner_sales_trend(v_start, 7)'));
+
+    final point = DailySalesPoint.fromMap({
+      'business_start': '2026-10-30T23:00:00Z',
+      'sales': 23000,
+    });
+    expect(point.sales, 23000);
+    expect(point.businessStart.toUtc(), DateTime.utc(2026, 10, 30, 23));
   });
 
   group('đọc dữ liệu THẬT của database', () {

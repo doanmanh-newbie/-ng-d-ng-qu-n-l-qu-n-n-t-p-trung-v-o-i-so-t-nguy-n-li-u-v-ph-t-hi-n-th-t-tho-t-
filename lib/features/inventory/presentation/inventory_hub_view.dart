@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/fore_card.dart';
+import '../../../core/design/action_tile.dart';
 import '../../../core/widgets/ops_icon.dart';
-import '../../ops/shift/application/shift_controller.dart';
+import '../../../core/widgets/page_scaffold.dart';
+import '../../shift/operations/application/ops_shift_controller.dart';
 import '../../stocktake/domain/stocktake_models.dart';
 
 /// Tab "Kho": nhập hàng và kiểm kê. Không hiện số tồn hay lịch sử nhập (chỉ chủ xem).
@@ -25,15 +26,16 @@ class InventoryHubView extends StatelessWidget {
         listenable: shift,
         builder: (context, _) {
           final missing = shift.closeStatus?.missingCounts ?? 0;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+          return PageScaffold(
             children: [
               const Text('Kho', style: AppTextStyles.display),
               const SizedBox(height: 6),
               const Text(
                 'Ghi nguyên liệu nhập về và đếm kho đầu ca, cuối ca.',
                 style: TextStyle(
-                    fontSize: 15, color: AppColors.textPrimary, height: 1.4),
+                    fontSize: AppFontSizes.s15,
+                    color: AppColors.textPrimary,
+                    height: 1.4),
               ),
               const SizedBox(height: 20),
               ActionTile(

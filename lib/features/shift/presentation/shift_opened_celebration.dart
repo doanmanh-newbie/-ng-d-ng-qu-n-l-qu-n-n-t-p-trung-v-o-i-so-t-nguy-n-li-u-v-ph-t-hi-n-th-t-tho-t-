@@ -107,7 +107,7 @@ class _CelebrationState extends State<_Celebration>
                           'Ca đã mở',
                           style: AppTextStyles.display.copyWith(
                             color: Colors.white,
-                            fontSize: 38,
+                            fontSize: AppFontSizes.s38,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -117,9 +117,9 @@ class _CelebrationState extends State<_Celebration>
                             greeting,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSizes.s16,
                               height: 1.4,
-                              color: Color(0xCCFFFFFF),
+                              color: AppColors.onSurfaceStrong,
                             ),
                           ),
                         ),

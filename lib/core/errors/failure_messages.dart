@@ -17,6 +17,8 @@ extension FailureMessage on AppFailure {
           'Số này đã được mời rồi, đang chờ họ chấp nhận.',
         InviteNotFoundFailure() =>
           'Lời mời này không còn nữa. Kéo xuống để làm mới hộp thư.',
+        InviteExpiredFailure() =>
+          'Lời mời đã hết hạn. Nhờ chủ quán gửi lời mời mới.',
         OwnerOnlyFailure() => 'Chỉ chủ quán làm được việc này.',
         InvalidOtpFailure() => 'Mã chưa đúng hoặc đã hết hạn.',
         TooManyRequestsFailure() =>
@@ -31,7 +33,7 @@ extension FailureMessage on AppFailure {
           'Supabase đang bật "Confirm email". Tắt ở Authentication > Providers > Email rồi thử lại.',
         PhoneLoginDomainRejectedFailure() =>
           'Supabase từ chối email giả của số điện thoại. Hãy đổi StaffCredentials.phoneEmailDomain '
-              'sang một tên miền khác (và cả _phone_login_domain() trong 015), hoặc đăng ký bằng email.',
+              'sang một tên miền khác (và hàm tương ứng trong database/04_membership_sessions.sql), hoặc đăng ký bằng email.',
         SessionExpiredFailure() =>
           'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.',
         DatabaseFailure(:final code) =>
@@ -59,10 +61,8 @@ extension FailureMessage on AppFailure {
 }
 
 String _missingRpcMessage(String rpcName) {
-  if (rpcName == 'current_shift') {
-    return 'Database chưa có hàm current_shift. Hãy chạy database/010_current_shift.sql trên Supabase.';
-  }
   const appReadRpcs = {
+    'current_shift',
     'shop_info',
     'shift_close_status',
     'table_map',
@@ -74,9 +74,30 @@ String _missingRpcMessage(String rpcName) {
     'waste_type_list',
   };
   if (appReadRpcs.contains(rpcName)) {
-    return 'Database chưa có hàm $rpcName. Hãy chạy database/011_app_read_api.sql trên Supabase.';
+    return 'Database chưa có hàm $rpcName. Hãy chạy database/03_read_apis.sql trên Supabase.';
   }
-  return 'Database chưa có hàm $rpcName. Kiểm tra các migration SQL của dự án trên Supabase.';
+  if (const {
+    'my_session_context',
+    'my_invites',
+    'expire_my_invites',
+    'invite_staff',
+    'shop_team',
+    'accept_invite',
+    'decline_invite',
+    'cancel_invite',
+    'owner_sales_trend',
+  }.contains(rpcName)) {
+    return 'Database chưa có hàm $rpcName. Hãy chạy database/04_membership_sessions.sql trên Supabase.';
+  }
+  if (const {
+    'create_shop',
+    'my_shops',
+    'select_shop',
+    'my_profile',
+  }.contains(rpcName)) {
+    return 'Database chưa có hàm $rpcName. Hãy chạy database/02_operations_reconciliation.sql trên Supabase.';
+  }
+  return 'Database chưa có hàm $rpcName. Hãy kiểm tra các nhóm SQL 01–04 trên Supabase.';
 }
 
 /// Database errors used by the sales, stocktake and inventory workflows.
@@ -107,6 +128,7 @@ const databaseMessages = <String, String>{
   'PAYMENT_METHOD_INVALID': 'Cách thanh toán không hợp lệ.',
   'SHOP_TYPE_INVALID': 'Loại quán không hợp lệ.',
   'CONTACT_REQUIRED': 'Nhập số điện thoại hoặc email của nhân viên.',
+  'INVITE_EXPIRED': 'Lời mời đã hết hạn. Nhờ chủ quán gửi lời mời mới.',
   'EMAIL_INVALID': 'Email chưa đúng định dạng.',
   'NAME_REQUIRED': 'Hãy nhập tên.',
   'SHOP_NAME_REQUIRED': 'Hãy nhập tên quán.',
@@ -124,5 +146,5 @@ const databaseMessages = <String, String>{
   'TOO_MANY_NOTIFICATIONS': 'Chọn quá nhiều thông báo cùng lúc.',
   'DIRECTION_INVALID': 'Loại thu/chi không hợp lệ.',
   'APP_API_MISSING':
-      'Database chưa có API giao diện mới. Hãy chạy database/011_app_read_api.sql trên Supabase rồi tải lại.',
+      'Database chưa có API giao diện mới. Hãy chạy database/03_read_apis.sql trên Supabase rồi tải lại.',
 };

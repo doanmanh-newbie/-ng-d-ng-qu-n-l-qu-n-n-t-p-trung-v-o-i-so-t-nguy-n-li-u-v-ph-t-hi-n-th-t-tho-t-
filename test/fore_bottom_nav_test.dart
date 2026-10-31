@@ -1,67 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fore/features/shell/presentation/fore_bottom_nav.dart';
+import 'package:fore/core/widgets/fore_bottom_nav.dart';
 
-Widget _host({
-  required bool shiftOpen,
-  required List<ShellTab> selected,
-  required List<ShellTab> locked,
-}) {
-  return MaterialApp(
-    home: Scaffold(
-      bottomNavigationBar: ForeBottomNav(
-        current: ShellTab.home,
-        shiftOpen: shiftOpen,
-        onSelect: selected.add,
-        onLockedTap: locked.add,
+Widget _host({required List<int> selected, bool disableAnimations = false}) =>
+    MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          disableAnimations: disableAnimations,
+        ),
+        child: child!,
       ),
-    ),
-  );
-}
+      home: Scaffold(
+        bottomNavigationBar: ForeBottomNav(
+          items: const [
+            NavItem(label: 'Tổng quan', icon: 'grid'),
+            NavItem(label: 'Kho', icon: 'package'),
+            NavItem(label: 'Đóng ca', icon: 'lock', enabled: false),
+          ],
+          selected: 0,
+          onSelect: selected.add,
+        ),
+      ),
+    );
 
 void main() {
-  testWidgets('chưa mở ca: bấm Kho báo tab bị khóa, không chuyển tab',
+  testWidgets('chọn tab đang hoạt động gọi callback đúng chỉ số',
       (tester) async {
-    final selected = <ShellTab>[];
-    final locked = <ShellTab>[];
-    await tester.pumpWidget(
-      _host(shiftOpen: false, selected: selected, locked: locked),
-    );
+    final selected = <int>[];
+    await tester.pumpWidget(_host(selected: selected));
 
     await tester.tap(find.text('Kho'));
+    await tester.pumpAndSettle();
+
+    expect(selected, [1]);
+  });
+
+  testWidgets('tab bị khóa không gọi callback', (tester) async {
+    final selected = <int>[];
+    await tester.pumpWidget(_host(selected: selected));
+
+    await tester.tap(find.text('Đóng ca'));
     await tester.pump();
 
-    expect(locked, [ShellTab.stock]);
     expect(selected, isEmpty);
+    expect(find.bySemanticsLabel('Đóng ca'), findsOneWidget);
   });
 
-  testWidgets('chưa mở ca: Trang chủ và Thêm vẫn bấm được', (tester) async {
-    final selected = <ShellTab>[];
-    final locked = <ShellTab>[];
-    await tester.pumpWidget(
-      _host(shiftOpen: false, selected: selected, locked: locked),
+  testWidgets('thanh điều hướng tôn trọng cài đặt giảm chuyển động',
+      (tester) async {
+    await tester.pumpWidget(_host(selected: [], disableAnimations: true));
+
+    final transitions = tester.widgetList<AnimatedContainer>(
+      find.byType(AnimatedContainer),
     );
-
-    await tester.tap(find.text('Thêm'));
-    await tester.pump();
-
-    expect(selected, [ShellTab.more]);
-    expect(locked, isEmpty);
-  });
-
-  testWidgets('đã mở ca: mọi tab bấm được', (tester) async {
-    final selected = <ShellTab>[];
-    final locked = <ShellTab>[];
-    await tester.pumpWidget(
-      _host(shiftOpen: true, selected: selected, locked: locked),
-    );
-
-    for (final tab in ShellTab.values) {
-      await tester.tap(find.text(tab.label));
-      await tester.pump();
-    }
-
-    expect(selected, ShellTab.values);
-    expect(locked, isEmpty);
+    expect(transitions, isNotEmpty);
+    expect(
+        transitions.every((transition) => transition.duration == Duration.zero),
+        isTrue);
   });
 }

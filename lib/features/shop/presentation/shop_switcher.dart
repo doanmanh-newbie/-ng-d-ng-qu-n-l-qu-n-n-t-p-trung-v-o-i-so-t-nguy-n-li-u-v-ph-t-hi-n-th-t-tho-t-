@@ -8,9 +8,8 @@ import '../../../core/errors/failure_messages.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../auth/application/session_controller.dart';
+import '../../auth/domain/auth_models.dart';
 import '../../shift/application/shift_controller.dart';
-import '../domain/shop_models.dart';
-import '../domain/shop_repository.dart';
 
 /// Bảng chọn quán: người làm nhiều quán chuyển qua lại; có lối "Tạo quán mới".
 Future<void> showShopSwitcher(BuildContext context) {
@@ -33,7 +32,7 @@ class _SwitcherSheet extends StatefulWidget {
 }
 
 class _SwitcherSheetState extends State<_SwitcherSheet> {
-  List<ShopMembership>? _shops;
+  List<SessionShop>? _shops;
   String? _error;
   String? _switching;
 
@@ -45,16 +44,20 @@ class _SwitcherSheetState extends State<_SwitcherSheet> {
 
   Future<void> _load() async {
     try {
-      final shops = await context.read<ShopRepository>().myShops();
-      if (mounted) setState(() => _shops = shops);
+      final session = context.read<SessionController>();
+      final failure = await session.refreshAfterSignIn();
+      if (failure != null) throw failure;
+      final state = session.state;
+      if (state is SessionReady && mounted) {
+        setState(() => _shops = state.shops);
+      }
     } on AppFailure catch (f) {
       if (mounted) setState(() => _error = f.userMessage);
     }
   }
 
-  Future<void> _select(ShopMembership shop) async {
+  Future<void> _select(SessionShop shop) async {
     if (shop.isCurrent || _switching != null) return;
-    final repo = context.read<ShopRepository>();
     final session = context.read<SessionController>();
     final shift = context.read<ShiftController>();
     final navigator = Navigator.of(context);
@@ -63,8 +66,7 @@ class _SwitcherSheetState extends State<_SwitcherSheet> {
       _error = null;
     });
     try {
-      await repo.selectShop(shop.shopId);
-      final failure = await session.refreshAfterSignIn();
+      final failure = await session.chooseShop(shop.shopId);
       if (failure != null) throw failure;
       shift.load();
       HapticFeedback.selectionClick();
@@ -111,7 +113,7 @@ class _SwitcherSheetState extends State<_SwitcherSheet> {
                     child: SizedBox.square(
                       dimension: 42,
                       child: Icon(
-                        s.isOwner
+                        s.role.isOwner
                             ? Icons.storefront_outlined
                             : Icons.badge_outlined,
                         color: AppColors.brand,
@@ -120,9 +122,10 @@ class _SwitcherSheetState extends State<_SwitcherSheet> {
                     ),
                   ),
                   title: Text(s.shopName,
-                      style: AppTextStyles.label.copyWith(fontSize: 16)),
+                      style: AppTextStyles.label
+                          .copyWith(fontSize: AppFontSizes.s16)),
                   subtitle: Text(
-                    '${s.isOwner ? 'Chủ quán' : 'Nhân viên'} · ${s.displayName}',
+                    '${s.role.isOwner ? 'Chủ quán' : 'Nhân viên'} · ${s.fullName}',
                     style: AppTextStyles.caption,
                   ),
                   trailing: _switching == s.shopId
@@ -142,7 +145,8 @@ class _SwitcherSheetState extends State<_SwitcherSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(_error!,
                     style: const TextStyle(
-                        color: AppColors.statusOff, fontSize: 13)),
+                        color: AppColors.statusOff,
+                        fontSize: AppFontSizes.s13)),
               ),
             const Divider(height: 24),
             TextButton.icon(

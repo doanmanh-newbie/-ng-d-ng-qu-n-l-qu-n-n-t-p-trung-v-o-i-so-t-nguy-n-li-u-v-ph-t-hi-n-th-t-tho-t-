@@ -1,7 +1,8 @@
 #!/bin/bash
 # Test race: máy A mở bill (giữ giao dịch chưa commit) trong lúc máy B đóng ca.
 # Mong đợi: close_shift CHỜ máy A; sau khi A commit thì thấy bill đang mở và báo OPEN_BILLS_REMAIN
-# (không có bill mở nằm trong ca đã đóng). Chạy sau 001..009 và tests/50: bash tests/51_concurrency.sh
+# (không có bill mở nằm trong ca đã đóng). Chạy sau khi cài các nhóm SQL 01–04 và tests/50.
+# Lệnh: bash tests/51_concurrency.sh
 # Dùng biến PGHOST/PGUSER/PGDATABASE như psql thường. KHÔNG chạy trên Supabase thật.
 set -u
 DB=${PGDATABASE:-fore_test}

@@ -26,14 +26,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _continued = false;
 
   /// Đăng ký với vai trò chủ quán (mặc định) hay nhân viên (truyền `false` khi mở màn này).
-  bool get _asOwner => (ModalRoute.of(context)?.settings.arguments as bool?) ?? true;
+  bool get _asOwner =>
+      (ModalRoute.of(context)?.settings.arguments as bool?) ?? true;
 
   /// Đăng ký xong và đã có phiên: tải hồ sơ rồi đi tiếp (chưa có quán -> Tạo quán).
   Future<void> _continueSignedIn() async {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final session = context.read<SessionController>();
-    session.ownerIntent = _asOwner;
     final failure = await session.refreshAfterSignIn();
     if (!mounted) return;
     if (failure != null) {
@@ -41,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       messenger.showSnackBar(SnackBar(content: Text(failure.userMessage)));
       return;
     }
-    final next = AppRoutes.routeFor(session.state, ownerIntent: _asOwner);
+    final next = AppRoutes.routeFor(session.state);
     if (next != null) navigator.pushNamedAndRemoveUntil(next, (_) => false);
   }
 
@@ -60,11 +60,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _submit() => context.read<RegisterController>().submit(
-    fullName: _name.text,
-    email: _email.text,
-    password: _password.text,
-    confirm: _confirm.text,
-  );
+        fullName: _name.text,
+        email: _email.text,
+        password: _password.text,
+        confirm: _confirm.text,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +89,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_asOwner ? 'Tạo tài khoản chủ quán' : 'Tạo tài khoản nhân viên',
+              Text(
+                  _asOwner
+                      ? 'Tạo tài khoản chủ quán'
+                      : 'Tạo tài khoản nhân viên',
                   style: AppTextStyles.screenTitle),
               const SizedBox(height: 6),
               Text(
@@ -144,7 +147,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   c.formError!,
                   style: const TextStyle(
                     color: AppColors.statusOff,
-                    fontSize: 13,
+                    fontSize: AppFontSizes.s13,
                   ),
                 ),
               ],
@@ -183,6 +186,7 @@ class _RegisterSuccessViewState extends State<_RegisterSuccessView> {
     await Future<void>.delayed(const Duration(seconds: 2));
     if (mounted) setState(() => _copied = false);
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,11 +198,12 @@ class _RegisterSuccessViewState extends State<_RegisterSuccessView> {
               const Spacer(),
               const CircleAvatar(
                 radius: 36,
-                backgroundColor: Color(0xFFDDEFE7),
+                backgroundColor: AppColors.backgroundTint,
                 child: Icon(Icons.check, size: 40, color: AppColors.statusOk),
               ),
               const SizedBox(height: 20),
-              const Text('Kiểm tra email của bạn', style: AppTextStyles.screenTitle),
+              const Text('Kiểm tra email của bạn',
+                  style: AppTextStyles.screenTitle),
               const SizedBox(height: 8),
               const Text(
                 'Bấm vào đường dẫn trong email gửi tới địa chỉ này để xác nhận tài khoản, rồi đăng nhập bằng vai trò Chủ quán.',

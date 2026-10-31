@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../app/app_routes.dart';
 import '../../core/data/rpc_client.dart';
@@ -29,10 +28,10 @@ import '../sales/data/rpc_sales_repository.dart';
 import '../sales/presentation/bill_screen.dart';
 import '../sales/presentation/tables_view.dart';
 import '../sales/presentation/takeaway_view.dart';
-import '../ops/shift/application/shift_controller.dart';
-import '../ops/shift/data/rpc_shift_repository.dart';
-import '../ops/shift/presentation/close_shift_view.dart';
-import '../ops/shift/presentation/no_shift_view.dart';
+import '../shift/operations/application/ops_shift_controller.dart';
+import '../shift/operations/data/rpc_ops_shift_repository.dart';
+import '../shift/operations/presentation/close_shift_view.dart';
+import '../shift/operations/presentation/no_shift_view.dart';
 import '../shop/presentation/shop_switcher.dart';
 import '../stocktake/data/rpc_stocktake_repository.dart';
 import '../stocktake/domain/stocktake_models.dart';
@@ -58,8 +57,7 @@ class _HomeScreenState extends State<OpsHomeScreen>
   static const _tablesRefresh = Duration(seconds: 15);
   static const _shiftRefresh = Duration(seconds: 30);
 
-  late final RpcClient _rpc =
-      widget.rpc ?? SupabaseRpcClient(Supabase.instance.client);
+  late final RpcClient _rpc = widget.rpc ?? context.read<RpcClient>();
   late final _shiftRepo = RpcOpsShiftRepository(_rpc);
   late final _salesRepo = RpcSalesRepository(_rpc);
   late final _stockRepo = RpcStocktakeRepository(_rpc);
@@ -196,6 +194,7 @@ class _HomeScreenState extends State<OpsHomeScreen>
                     ? ''
                     : '${profile.role == StaffRole.owner ? 'Chủ quán' : 'Nhân viên'} · ${profile.fullName}',
                 onBack: widget.onBackToManagement,
+                onChooseShop: () => showShopSwitcher(context),
                 pill: ready
                     ? ShiftPill(
                         label: hasShift
@@ -267,13 +266,14 @@ class _HomeScreenState extends State<OpsHomeScreen>
       onTeam: () => Navigator.of(context).pushNamed(AppRoutes.team),
       onSignOut: _signOut,
     );
-    if (!_shift.hasOpenShift)
+    if (!_shift.hasOpenShift) {
       return tab == 4
           ? more
           : NoShiftView(
               shift: _shift,
               onCountOpening: () => _openCount(CountKind.open),
             );
+    }
     return switch (tab) {
       0 => TablesView(
           tables: _tables,

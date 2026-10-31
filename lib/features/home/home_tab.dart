@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/brand_logo.dart';
 import '../../core/widgets/fade_slide_in.dart';
+import '../../core/widgets/fore_card.dart';
 import '../../core/widgets/fore_button.dart';
 import '../../core/widgets/fore_icon.dart';
 import '../../core/widgets/minute_ticker.dart';
@@ -35,8 +36,7 @@ class HomeTab extends StatelessWidget {
         Expanded(
           child: RefreshIndicator(
             color: AppColors.brand,
-            onRefresh: () =>
-                context.read<ShiftController>().load(quiet: true),
+            onRefresh: () => context.read<ShiftController>().load(quiet: true),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
@@ -107,7 +107,7 @@ class _Header extends StatelessWidget {
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Color(0x140C2D32),
+            color: AppColors.shadowSubtle,
             blurRadius: 18,
             offset: Offset(0, 6),
           ),
@@ -126,18 +126,20 @@ class _Header extends StatelessWidget {
                     children: [
                       Text(
                         'Fore',
-                        style: AppTextStyles.display.copyWith(fontSize: 32),
+                        style: AppTextStyles.display
+                            .copyWith(fontSize: AppFontSizes.s32),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         [
                           if (shop.isNotEmpty) shop,
-                          if (name.isNotEmpty) '${isOwner ? 'Chủ quán' : 'Nhân viên'} $name',
+                          if (name.isNotEmpty)
+                            '${isOwner ? 'Chủ quán' : 'Nhân viên'} $name',
                         ].join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.label.copyWith(
-                          fontSize: 14,
+                          fontSize: AppFontSizes.s14,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -217,7 +219,7 @@ class _StatusPill extends StatelessWidget {
       duration: Motion.of(context, const Duration(milliseconds: 300)),
       padding: const EdgeInsets.fromLTRB(8, 2, 16, 2),
       decoration: BoxDecoration(
-        color: open ? const Color(0xFFE6F4EC) : AppColors.tint,
+        color: open ? AppColors.healthyBackground : AppColors.tint,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -231,7 +233,7 @@ class _StatusPill extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: AppFontSizes.s14,
               fontWeight: FontWeight.w600,
               color: AppColors.brand,
             ),
@@ -272,7 +274,7 @@ class _NoShiftCard extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 12),
-          FadeSlideIn(
+          const FadeSlideIn(
             child: _BreathingIcon(
               child: ForeIconView(
                 ForeIcon.calendar,
@@ -402,7 +404,8 @@ class _OpenShiftCard extends StatelessWidget {
               curve: Curves.easeOutCubic,
               builder: (context, minutes, _) => Text(
                 formatElapsed(Duration(minutes: minutes.round())),
-                style: AppTextStyles.display.copyWith(fontSize: 38),
+                style:
+                    AppTextStyles.display.copyWith(fontSize: AppFontSizes.s38),
               ),
             ),
           ),
@@ -457,7 +460,7 @@ class _BillsChip extends StatelessWidget {
             Text(
               has ? '$count bill đang mở' : 'Không có bill đang mở',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSizes.s14,
                 fontWeight: FontWeight.w600,
                 color: has ? AppColors.warningText : AppColors.brand,
               ),
@@ -517,7 +520,8 @@ class _FootNote extends StatelessWidget {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: AppTextStyles.body.copyWith(color: AppColors.brand, fontSize: 14),
+      style: AppTextStyles.body
+          .copyWith(color: AppColors.brand, fontSize: AppFontSizes.s14),
     );
   }
 }

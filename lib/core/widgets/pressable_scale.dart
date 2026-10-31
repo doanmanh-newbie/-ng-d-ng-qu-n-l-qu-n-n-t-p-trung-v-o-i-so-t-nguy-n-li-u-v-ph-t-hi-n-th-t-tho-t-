@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../motion.dart';
+
 /// Bọc một thẻ để khi nhấn thì co nhẹ lại: cảm giác chạm rõ ràng mà không cần thư viện nào.
 /// Không có `onTap` thì không phản hồi gì (thẻ chỉ để xem).
 class PressableScale extends StatefulWidget {
-  const PressableScale({super.key, required this.child, this.onTap, this.onLongPress});
+  const PressableScale(
+      {super.key, required this.child, this.onTap, this.onLongPress});
 
   final Widget child;
   final VoidCallback? onTap;
@@ -31,7 +34,7 @@ class _PressableScaleState extends State<PressableScale> {
         onLongPress: widget.onLongPress,
         child: AnimatedScale(
           scale: _down ? 0.97 : 1,
-          duration: const Duration(milliseconds: 110),
+          duration: Motion.of(context, const Duration(milliseconds: 110)),
           curve: Curves.easeOut,
           child: widget.child,
         ),

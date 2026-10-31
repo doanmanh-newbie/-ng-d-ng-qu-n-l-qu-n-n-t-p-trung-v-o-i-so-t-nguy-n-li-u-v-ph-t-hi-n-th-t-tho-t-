@@ -6,8 +6,8 @@ import 'package:fore/features/inventory/domain/inventory_models.dart';
 import 'package:fore/features/inventory/domain/inventory_repository.dart';
 import 'package:fore/features/sales/domain/sales_models.dart';
 import 'package:fore/features/sales/domain/sales_repository.dart';
-import 'package:fore/features/ops/shift/domain/shift_models.dart';
-import 'package:fore/features/ops/shift/domain/shift_repository.dart';
+import 'package:fore/features/shift/operations/domain/ops_shift_models.dart';
+import 'package:fore/features/shift/operations/domain/ops_shift_repository.dart';
 import 'package:fore/features/stocktake/domain/stocktake_models.dart';
 import 'package:fore/features/stocktake/domain/stocktake_repository.dart';
 
@@ -325,8 +325,9 @@ class FakeRpcClient implements RpcClient {
   @override
   Future<dynamic> call(String fn, [Map<String, dynamic>? params]) async {
     calls.add((fn: fn, params: params));
-    if (!responses.containsKey(fn))
+    if (!responses.containsKey(fn)) {
       throw StateError('FakeRpcClient: chưa dựng dữ liệu cho "$fn"');
+    }
     final r = responses[fn];
     if (r is AppFailure) throw r;
     return r;

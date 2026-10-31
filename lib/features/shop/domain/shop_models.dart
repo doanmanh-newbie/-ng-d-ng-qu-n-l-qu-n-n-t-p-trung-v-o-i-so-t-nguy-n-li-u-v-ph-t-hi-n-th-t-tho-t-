@@ -84,7 +84,7 @@ class TeamMember {
   final String email;
 }
 
-/// Lời mời chủ đã gửi và đang chờ trả lời.
+/// Lời mời chủ đã gửi, kèm trạng thái phản hồi trong lịch sử đội ngũ.
 class PendingInvite {
   const PendingInvite({
     required this.id,
@@ -92,6 +92,8 @@ class PendingInvite {
     this.email,
     required this.fullName,
     required this.createdAt,
+    this.status = 'pending',
+    this.respondedAt,
   });
 
   factory PendingInvite.fromMap(Map<String, dynamic> m) => PendingInvite(
@@ -100,6 +102,10 @@ class PendingInvite {
         email: m['email'] as String?,
         fullName: m['full_name'] as String,
         createdAt: DateTime.parse(m['created_at'] as String).toLocal(),
+        status: m['status'] as String? ?? 'pending',
+        respondedAt: m['responded_at'] == null
+            ? null
+            : DateTime.parse(m['responded_at'] as String).toLocal(),
       );
 
   final String id;
@@ -109,4 +115,14 @@ class PendingInvite {
   final String? email;
   final String fullName;
   final DateTime createdAt;
+  final String status;
+  final DateTime? respondedAt;
+
+  String get statusLabel => switch (status) {
+        'accepted' => 'Đã tham gia',
+        'declined' => 'Đã từ chối',
+        'cancelled' => 'Đã hủy',
+        'expired' => 'Đã hết hạn',
+        _ => 'Đang chờ',
+      };
 }

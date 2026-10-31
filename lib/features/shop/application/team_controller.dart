@@ -16,7 +16,9 @@ class TeamController extends ChangeNotifier {
   List<TeamMember> get members => _members;
 
   List<PendingInvite> _pending = const [];
-  List<PendingInvite> get pending => _pending;
+  List<PendingInvite> get pending =>
+      _pending.where((invite) => invite.status == 'pending').toList();
+  List<PendingInvite> get inviteHistory => _pending;
 
   bool _loading = true;
   bool get loading => _loading;
@@ -41,11 +43,16 @@ class TeamController extends ChangeNotifier {
     try {
       final results = await Future.wait([
         _repository.team(),
-        _repository.pendingInvites(),
+        _repository.inviteHistory(),
       ]);
       _members = results[0] as List<TeamMember>;
       _pending = results[1] as List<PendingInvite>;
       _error = null;
+    } on OwnerOnlyFailure {
+      if (!quiet || _loading) {
+        _error = 'Gmail đăng nhập chưa có vai trò chủ trong quán đang chọn. '
+            'Nếu bạn vừa reset database, hãy đăng xuất, đăng nhập lại rồi tạo quán để tạo quyền chủ.';
+      }
     } on AppFailure catch (f) {
       if (!quiet || _loading) _error = f.userMessage;
     }
@@ -103,6 +110,9 @@ class TeamController extends ChangeNotifier {
       phoneError = f.userMessage;
     } on AlreadyInvitedFailure catch (f) {
       phoneError = f.userMessage;
+    } on OwnerOnlyFailure {
+      formError =
+          'Phiên đăng nhập hoặc quán đang chọn không còn quyền chủ quán. Hãy đăng nhập lại tài khoản chủ rồi gửi lời mời.';
     } on AppFailure catch (f) {
       formError = f.userMessage;
     }

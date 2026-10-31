@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'splash_strings.dart';
 import 'splash_timeline.dart';
+import 'package:fore/core/design/typography.dart';
 
 /// Thẻ "Không gian quán đã sẵn sàng": hình quầy quán ở giữa, khói bốc từ ly,
 /// lá và hạt cà phê trang trí nổi nhẹ ở hai bên.
@@ -101,7 +102,7 @@ class _Title extends StatelessWidget {
           Text(
             SplashStrings.stageTitle,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFontSizes.s11,
               fontWeight: FontWeight.w700,
               color: AppColors.brand,
             ),

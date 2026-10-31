@@ -9,6 +9,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/fade_slide_in.dart';
 import '../../../core/widgets/pulse_dot.dart';
 import '../../auth/application/session_controller.dart';
+import '../../auth/domain/auth_models.dart';
 import '../../shift/application/shift_controller.dart';
 import 'invite_list.dart';
 
@@ -34,8 +35,8 @@ class EmptySpaceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<SessionController>().state;
-    final contact = state is SessionNoShop ? state.contact : '';
-    final name = state is SessionNoShop ? state.displayName : '';
+    final contact = state is SessionAwaitingInvite ? state.user.contact : '';
+    final name = state is SessionAwaitingInvite ? state.user.displayName : '';
 
     return Scaffold(
       body: SafeArea(
@@ -51,20 +52,14 @@ class EmptySpaceScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Column(
                 children: [
-                  FilledButton.icon(
-                    onPressed: () =>
-                        Navigator.of(context).pushNamed(AppRoutes.home),
-                    icon: const Icon(Icons.storefront_outlined),
-                    label: const Text('Trải nghiệm giao diện nhân viên'),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: () {
-                      context.read<SessionController>().ownerIntent = true;
-                      Navigator.of(context).pushNamed(AppRoutes.createShop);
-                    },
-                    child: const Text('Tôi là chủ quán — tạo quán của tôi'),
-                  ),
+                  if (state is SessionAwaitingInvite &&
+                      state.context.accountKind == AccountKind.unknown)
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed(AppRoutes.createShop),
+                      icon: const Icon(Icons.storefront_outlined),
+                      label: const Text('Tôi là chủ quán — tạo quán của tôi'),
+                    ),
                   TextButton(
                     onPressed: () => _signOut(context),
                     child: const Text('Đăng xuất'),

@@ -14,9 +14,9 @@ import '../theme/app_colors.dart';
 /// (0xFF3F9E92) đang là số ước lượng từ ảnh, còn teal của logo là 0xFF51A19B.
 /// Khi có bảng màu chính thức của thiết kế, cân nhắc thống nhất hai màu này.
 
-const _dark = Color(0xFF0C2D32);
-const _teal = Color(0xFF51A19B);
-const _star = Color(0xFFF3F7F5);
+const _dark = AppColors.brand;
+const _teal = AppColors.brandAccent;
+const _star = AppColors.background;
 
 /// Số đo gốc (px thiết kế) dùng để tính tỉ lệ.
 abstract final class _Design {
@@ -131,9 +131,9 @@ class BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox.square(
-    dimension: size,
-    child: const CustomPaint(painter: _MarkPainter()),
-  );
+        dimension: size,
+        child: const CustomPaint(painter: _MarkPainter()),
+      );
 }
 
 class _MarkPainter extends CustomPainter {
@@ -267,13 +267,13 @@ class BrandWordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'Fore',
-    child: SizedBox(
-      width: _Design.wordWidth * scale,
-      height: _Design.wordHeight * scale,
-      child: const CustomPaint(painter: _WordmarkPainter()),
-    ),
-  );
+        label: 'Fore',
+        child: SizedBox(
+          width: _Design.wordWidth * scale,
+          height: _Design.wordHeight * scale,
+          child: const CustomPaint(painter: _WordmarkPainter()),
+        ),
+      );
 }
 
 class _WordmarkPainter extends CustomPainter {

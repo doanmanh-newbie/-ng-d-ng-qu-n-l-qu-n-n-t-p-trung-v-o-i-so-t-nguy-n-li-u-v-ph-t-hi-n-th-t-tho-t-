@@ -162,10 +162,12 @@ class BillController extends ActionNotifier {
   Future<bool> setDiscount(int amount, String reason) async {
     final current = bill;
     if (current == null) return false;
-    if (amount < 0 || amount > current.subtotal)
+    if (amount < 0 || amount > current.subtotal) {
       throw const DatabaseFailure('DISCOUNT_INVALID');
-    if (amount > 0 && reason.trim().isEmpty)
+    }
+    if (amount > 0 && reason.trim().isEmpty) {
       throw const DatabaseFailure('REASON_REQUIRED');
+    }
     final done = await runAction<bool>(() async {
       await _repo.setDiscount(billId, amount, reason.trim());
       await _refreshBill();

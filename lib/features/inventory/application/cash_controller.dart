@@ -43,9 +43,12 @@ class CashController extends ActionNotifier {
 
   Future<bool> submit() async {
     final value = amount;
-    if (value == null || value <= 0 || value > maxAmount)
+    if (value == null || value <= 0 || value > maxAmount) {
       throw const DatabaseFailure('AMOUNT_INVALID');
-    if (!noteOk) throw const DatabaseFailure('NOTE_REQUIRED');
+    }
+    if (!noteOk) {
+      throw const DatabaseFailure('NOTE_REQUIRED');
+    }
     final done = await runAction<bool>(() async {
       await _repo.addMovement(incoming: incoming, amount: value, note: note);
       return true;
