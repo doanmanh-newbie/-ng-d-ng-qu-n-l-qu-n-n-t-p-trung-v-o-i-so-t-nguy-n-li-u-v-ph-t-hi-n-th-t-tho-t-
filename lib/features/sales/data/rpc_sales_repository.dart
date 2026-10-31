@@ -38,8 +38,9 @@ class RpcSalesRepository implements SalesRepository {
           'p_type': type.wire,
           'p_guests': guests,
         });
-        if (id is! String)
+        if (id is! String) {
           throw FormatException('open_bill cần trả mã bill, nhận: $id');
+        }
         return id;
       });
 
@@ -72,8 +73,9 @@ class RpcSalesRepository implements SalesRepository {
   Future<int> pay(String billId, PaymentMethod method) => _parse(() async {
         final total = await _rpc
             .call('pay_bill', {'p_bill': billId, 'p_method': method.wire});
-        if (total is! int)
+        if (total is! int) {
           throw FormatException('pay_bill cần trả số tiền, nhận: $total');
+        }
         return total;
       });
 

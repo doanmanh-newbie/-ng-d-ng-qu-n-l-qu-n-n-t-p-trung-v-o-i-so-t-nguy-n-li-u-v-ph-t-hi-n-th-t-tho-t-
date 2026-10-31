@@ -14,6 +14,10 @@ void main() {
       final email = StaffCredentials.emailFor(c);
       expect(email, 'p84901234567@phone.fore-staff.app');
       expect(StaffCredentials.phoneFromEmail(email), '84901234567');
+      expect(
+        StaffCredentials.demoContactMetadata(c),
+        {'demo_phone': '+84901234567'},
+      );
     });
 
     test('email thật giữ nguyên, không bị coi là số điện thoại', () {
@@ -21,6 +25,10 @@ void main() {
           StaffContact.tryParse(ContactKind.email, ' Lan@Gmail.com ').contact!;
       expect(StaffCredentials.emailFor(c), 'lan@gmail.com');
       expect(StaffCredentials.phoneFromEmail('lan@gmail.com'), isNull);
+      expect(
+        StaffCredentials.demoContactMetadata(c),
+        {'demo_email': 'lan@gmail.com'},
+      );
     });
   });
 

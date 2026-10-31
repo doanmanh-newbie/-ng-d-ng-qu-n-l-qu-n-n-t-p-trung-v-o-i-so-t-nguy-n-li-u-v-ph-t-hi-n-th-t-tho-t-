@@ -28,6 +28,14 @@ abstract final class StaffCredentials {
           ? contact.value
           : 'p${contact.value.substring(1)}@$phoneEmailDomain'; // bỏ dấu "+"
 
+  /// Liên hệ của tài khoản demo để database khớp lời mời ngay cả khi email
+  /// nhân viên là email giả đại diện cho số điện thoại.
+  static Map<String, String> demoContactMetadata(StaffContact contact) =>
+      switch (contact.kind) {
+        ContactKind.phone => {'demo_phone': contact.value},
+        ContactKind.email => {'demo_email': contact.value},
+      };
+
   static String passwordFor(StaffContact contact) => '$_prefix${contact.value}';
 
   /// Số điện thoại (dạng `84901234567`, không có "+") nếu `email` là email giả của số điện

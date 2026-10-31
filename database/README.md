@@ -23,6 +23,7 @@ Mở **SQL Editor** của dự án Supabase, dán và chạy lần lượt (đú
 | `014_invite_phone_or_email.sql` | Cho phép chủ gửi lời mời bằng số điện thoại, email hoặc cả hai |
 | `015_simple_staff_login.sql` | **Chỉ để thử:** nhân viên đăng nhập chỉ bằng số điện thoại hoặc email, không OTP. Số điện thoại đăng ký bằng email giả `p84901234567@phone.fore-staff.app`, database nhận ra và vẫn khớp lời mời theo số |
 | `016_audit_actor_same_shop.sql` | Sửa nhật ký khi một người thuộc nhiều quán: người đã ở quán A tạo quán B hoặc nhận lời mời vào quán B không còn bị khóa ngoại của `audit_log` chặn |
+| `017_staff_invite_contact_fallback.sql` | Sửa hộp thư cho tài khoản nhân viên thử nghiệm cũ: số/email trong Auth được dùng làm dự phòng nếu metadata demo chưa có |
 | `sim/sim_data.sql` | **Dữ liệu MÔ PHỎNG** 30 ngày có gian lận cài sẵn (chỉ chạy trên database thử, không phải database quán thật) |
 | `dev/seed_owner_dashboard.sql` | Tạo quán demo riêng, menu, tồn kho, bill, 3 ca đóng + 1 ca mở và lời mời để xem dashboard chủ quán (project thử) |
 | `sim/evaluate_simulation.sql` | Đo tỉ lệ phát hiện / báo nhầm trên dữ liệu mô phỏng, dùng cho báo cáo |
@@ -31,7 +32,7 @@ Mở **SQL Editor** của dự án Supabase, dán và chạy lần lượt (đú
 | `dev/reset_all.sql` | NGUY HIỂM: xóa sạch dữ liệu để làm lại (dọn dữ liệu mô phỏng) |
 | `tests/` | Kiểm thử chạy trên PostgreSQL thường (không dùng trên Supabase) |
 
-> **Nếu gặp `relation "shops" does not exist`:** database đang dùng schema cũ hoặc chưa chạy `001_tables.sql`. `012_owner_dashboard.sql` không chạy độc lập; nó cần các bảng multi-shop được tạo từ `001` đến `011`. Trên project thử, chạy `dev/reset_schema.sql` một lần rồi chạy lần lượt `001_tables.sql` → `016_audit_actor_same_shop.sql`. Reset này xóa toàn bộ schema `public` và dữ liệu Fore trong đó; tài khoản Supabase Auth vẫn còn. Không chạy trên database có dữ liệu cần giữ.
+> **Nếu gặp `relation "shops" does not exist`:** database đang dùng schema cũ hoặc chưa chạy `001_tables.sql`. `012_owner_dashboard.sql` không chạy độc lập; nó cần các bảng multi-shop được tạo từ `001` đến `011`. Trên project thử, chạy `dev/reset_schema.sql` một lần rồi chạy lần lượt `001_tables.sql` → `017_staff_invite_contact_fallback.sql`. Reset này xóa toàn bộ schema `public` và dữ liệu Fore trong đó; tài khoản Supabase Auth vẫn còn. Không chạy trên database có dữ liệu cần giữ.
 
 ## Công thức đối soát (chỉ viết ở database)
 - Thực dùng = tồn đầu + nhập − tồn cuối (nhân viên đếm mù)
@@ -134,7 +135,7 @@ Bộ `sim/` mô phỏng 30 ngày (ngày bắt đầu **cố định**, nên ch�
 createdb fore_test
 psql -d fore_test -f tests/00_supabase_stub.sql   # giả lập role/auth của Supabase
 psql -d fore_test -f 001_tables.sql -f 002_rules.sql -f 003_actions.sql -f 004_reconcile.sql \
-                   -f 005_cash_reconcile.sql -f 006_waste_report.sql -f 007_corrections.sql -f 008_staff_setup.sql -f 009_shift_report.sql -f 010_current_shift.sql -f 011_app_read_api.sql -f 012_owner_dashboard.sql -f 013_staff_birth_date.sql -f 014_invite_phone_or_email.sql -f 015_simple_staff_login.sql -f 016_audit_actor_same_shop.sql
+                   -f 005_cash_reconcile.sql -f 006_waste_report.sql -f 007_corrections.sql -f 008_staff_setup.sql -f 009_shift_report.sql -f 010_current_shift.sql -f 011_app_read_api.sql -f 012_owner_dashboard.sql -f 013_staff_birth_date.sql -f 014_invite_phone_or_email.sql -f 015_simple_staff_login.sql -f 016_audit_actor_same_shop.sql -f 017_staff_invite_contact_fallback.sql
 psql -d fore_test -f tests/10_reconcile_exercises.sql   # đối soát nguyên liệu: phải in "TẤT CẢ KIỂM THỬ ĐỀU ĐÚNG"
 psql -d fore_test -f tests/20_cash_exercises.sql        # đối soát tiền mặt: phải in "TIEN MAT: TAT CA DEU DUNG"
 psql -d fore_test -f tests/30_config_waste_exercises.sql # cấu hình + hao hụt: phải in "CAU HINH + HAO HUT: TAT CA DEU DUNG"
@@ -142,6 +143,7 @@ psql -d fore_test -f tests/40_shift_report_exercises.sql # shift_report + cờ x
 psql -d fore_test -f tests/50_hardening_exercises.sql    # chặn sửa công thức đã bán + đóng/mở ca: phải in "HARDENING: TAT CA DEU DUNG"
 psql -d fore_test -f tests/60_current_shift_exercises.sql # xem ca đang mở: phải in "CURRENT SHIFT: TAT CA DEU DUNG"
 psql -d fore_test -f tests/70_multishop_exercises.sql # cô lập dữ liệu và chặn liên kết chéo quán: phải in "SMOKE: DUNG"
+psql -d fore_test -f tests/85_simple_staff_login.sql # tài khoản phone/email cũ nhận được lời mời: phải in "SMOKE: DUNG"
 bash tests/51_concurrency.sh                              # 2 phiên song song: mở bill lúc đóng ca: phải in "CONCURRENCY: DUNG"
 psql -d fore_test -f sim/sim_data.sql -f sim/evaluate_simulation.sql -f sim/evaluate_noise_reduction.sql
 ```

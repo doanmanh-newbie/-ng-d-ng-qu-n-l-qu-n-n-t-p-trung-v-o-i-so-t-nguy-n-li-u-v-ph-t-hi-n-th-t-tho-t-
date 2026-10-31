@@ -7,14 +7,22 @@ import 'owner_dashboard_repository.dart';
 class OwnerDashboardController extends ChangeNotifier {
   OwnerDashboardController(this._repository);
 
-  final OwnerDashboardRepository _repository;
+  final OwnerDashboardDataSource _repository;
 
   OwnerDashboardData? data;
   Object? failure;
   bool loading = true;
   bool refreshing = false;
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   Future<void> load({bool refresh = false}) async {
+    if (_disposed) return;
     if (data == null) {
       loading = true;
     } else if (refresh) {
@@ -23,13 +31,16 @@ class OwnerDashboardController extends ChangeNotifier {
     failure = null;
     notifyListeners();
     try {
-      data = await _repository.load();
+      final loaded = await _repository.load();
+      if (!_disposed) data = loaded;
     } catch (error) {
-      failure = error;
+      if (!_disposed) failure = error;
     } finally {
-      loading = false;
-      refreshing = false;
-      notifyListeners();
+      if (!_disposed) {
+        loading = false;
+        refreshing = false;
+        notifyListeners();
+      }
     }
   }
 

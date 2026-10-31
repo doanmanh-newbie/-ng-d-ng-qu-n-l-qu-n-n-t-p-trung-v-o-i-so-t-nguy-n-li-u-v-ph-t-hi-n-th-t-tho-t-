@@ -29,8 +29,9 @@ class RpcOpsShiftRepository implements OpsShiftRepository {
   @override
   Future<CloseStatus> closeStatus() => _parse(() async {
         final rows = asRows(await _rpc.call('shift_close_status'));
-        if (rows.isEmpty)
+        if (rows.isEmpty) {
           throw const FormatException('shift_close_status không trả dòng nào');
+        }
         return CloseStatus.fromRow(rows.first);
       });
 

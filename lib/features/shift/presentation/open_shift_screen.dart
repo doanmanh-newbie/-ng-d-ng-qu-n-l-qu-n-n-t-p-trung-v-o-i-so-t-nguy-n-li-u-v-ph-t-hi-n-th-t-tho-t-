@@ -288,9 +288,9 @@ class _FormView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
-        FadeSlideIn(
-          delay: const Duration(milliseconds: 100),
-          child: const Text('Tiền đầu ca', style: AppTextStyles.label),
+        const FadeSlideIn(
+          delay: Duration(milliseconds: 100),
+          child: Text('Tiền đầu ca', style: AppTextStyles.label),
         ),
         const SizedBox(height: 8),
         FadeSlideIn(

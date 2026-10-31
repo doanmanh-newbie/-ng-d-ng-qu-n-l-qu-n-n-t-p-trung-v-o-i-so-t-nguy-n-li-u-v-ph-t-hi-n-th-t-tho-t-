@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 import '../../app/app_routes.dart';
 import '../../core/format.dart';
-import '../../core/data/rpc_client.dart';
 import '../../core/errors/failure_messages.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/fore_card.dart';
 import '../../core/widgets/fore_header.dart';
+import '../../core/widgets/fore_action_icons.dart';
+import '../../core/widgets/page_scaffold.dart';
+import '../../core/widgets/status_chip.dart';
 import '../auth/application/session_controller.dart';
 import '../auth/domain/auth_models.dart';
 import '../home/home_screen.dart';
-import '../inventory/data/rpc_inventory_repository.dart';
+import '../inventory/domain/inventory_repository.dart';
 import '../inventory/presentation/cash_screen.dart';
 import '../inventory/presentation/waste_screen.dart';
 import '../more/more_view.dart';
@@ -23,101 +26,97 @@ import 'owner_dashboard_repository.dart';
 import 'owner_dashboard_controller.dart';
 import 'owner_dashboard_models.dart';
 import 'presentation/owner_notifications_screen.dart';
+import 'presentation/owner_menu_management_screen.dart';
 
 /// Trang chủ riêng của chủ quán. Số liệu mẫu trong file thiết kế không được dùng
 /// ở đây; mọi chỉ số hiển thị đều lấy từ database hoặc hiện trạng thái trống/lỗi.
-class OwnerHomeScreen extends StatefulWidget {
+class OwnerHomeScreen extends StatelessWidget {
   const OwnerHomeScreen({super.key, required this.profile});
 
   final Profile profile;
 
   @override
-  State<OwnerHomeScreen> createState() => _OwnerHomeScreenState();
+  Widget build(BuildContext context) => ChangeNotifierProvider(
+        create: (context) =>
+            OwnerDashboardController(context.read<OwnerDashboardDataSource>())
+              ..load(),
+        child: _OwnerHomeContent(profile: profile),
+      );
 }
 
-class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
-  late final _repository = OwnerDashboardRepository(Supabase.instance.client);
-  late final OwnerDashboardController _dashboard;
+class _OwnerHomeContent extends StatefulWidget {
+  const _OwnerHomeContent({required this.profile});
+
+  final Profile profile;
+
+  @override
+  State<_OwnerHomeContent> createState() => _OwnerHomeContentState();
+}
+
+class _OwnerHomeContentState extends State<_OwnerHomeContent> {
   int _tab = 0;
   OwnerShiftReport? _selectedReport;
 
-  @override
-  void initState() {
-    super.initState();
-    _dashboard = OwnerDashboardController(_repository)..load();
-  }
+  Future<void> _refresh() =>
+      context.read<OwnerDashboardController>().load(refresh: true);
 
-  @override
-  void dispose() {
-    _dashboard.dispose();
-    super.dispose();
-  }
-
-  Future<void> _refresh() => _dashboard.load(refresh: true);
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.background,
-        body: Column(
-          children: [
-            ForeHeader(
-              shopName: widget.profile.shopName.isEmpty
-                  ? 'Fore'
-                  : widget.profile.shopName,
-              subtitle: 'Chủ quán · ${widget.profile.fullName}',
-              pill: null,
-            ),
-            Expanded(
-              child: ListenableBuilder(
-                listenable: _dashboard,
-                builder: (context, _) {
-                  final data = _dashboard.data;
-                  if (data == null && _dashboard.loading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (data == null) {
-                    return _ErrorPanel(
-                      onRetry: _refresh,
-                      message: _errorMessage(_dashboard.failure),
-                    );
-                  }
-                  final page = _page(data);
-                  if (_dashboard.failure == null) return page;
-                  return Column(children: [
-                    MaterialBanner(
-                      content: Text(_errorMessage(_dashboard.failure)),
-                      leading: const Icon(Icons.cloud_off_outlined),
-                      actions: [
-                        TextButton(
-                            onPressed: _refresh, child: const Text('Thử lại')),
-                      ],
-                    ),
-                    Expanded(child: page),
-                  ]);
-                },
-              ),
-            ),
-          ],
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _tab,
-          onDestinationSelected: (index) => setState(() {
-            _tab = index;
-            _selectedReport = null;
-          }),
-          destinations: const [
-            NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined), label: 'Tổng quan'),
-            NavigationDestination(
-                icon: Icon(Icons.fact_check_outlined), label: 'Đối soát'),
-            NavigationDestination(
-                icon: Icon(Icons.menu_book_outlined), label: 'Thực đơn'),
-            NavigationDestination(
-                icon: Icon(Icons.inventory_2_outlined), label: 'Kho'),
-            NavigationDestination(icon: Icon(Icons.more_horiz), label: 'Thêm'),
-          ],
-        ),
+  Widget _pageHeader() => ForeHeader(
+        shopName:
+            widget.profile.shopName.isEmpty ? 'Fore' : widget.profile.shopName,
+        subtitle: 'Chủ quán · ${widget.profile.fullName}',
       );
+
+  @override
+  Widget build(BuildContext context) {
+    final dashboard = context.watch<OwnerDashboardController>();
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Builder(
+        builder: (context) {
+          final data = dashboard.data;
+          if (data == null && dashboard.loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (data == null) {
+            return _ErrorPanel(
+              onRetry: _refresh,
+              message: _errorMessage(dashboard.failure),
+            );
+          }
+          final page = _page(data);
+          if (dashboard.failure == null) return page;
+          return Column(children: [
+            MaterialBanner(
+              content: Text(_errorMessage(dashboard.failure)),
+              leading: const Icon(Icons.cloud_off_outlined),
+              actions: [
+                TextButton(onPressed: _refresh, child: const Text('Thử lại')),
+              ],
+            ),
+            Expanded(child: page),
+          ]);
+        },
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (index) => setState(() {
+          _tab = index;
+          _selectedReport = null;
+        }),
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined), label: 'Tổng quan'),
+          NavigationDestination(
+              icon: Icon(Icons.fact_check_outlined), label: 'Đối soát'),
+          NavigationDestination(
+              icon: Icon(Icons.menu_book_outlined), label: 'Thực đơn'),
+          NavigationDestination(
+              icon: Icon(Icons.inventory_2_outlined), label: 'Kho'),
+          NavigationDestination(icon: Icon(Icons.more_horiz), label: 'Thêm'),
+        ],
+      ),
+    );
+  }
 
   Widget _page(OwnerDashboardData data) {
     if (_tab == 4) return _more(data);
@@ -132,9 +131,9 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
 
   Widget _overview(OwnerDashboardData data) => RefreshIndicator(
         onRefresh: _refresh,
-        child: ListView(
+        child: PageScaffold(
+          header: _pageHeader(),
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
           children: [
             Row(
               children: [
@@ -211,7 +210,13 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
             if (data.reports.isEmpty)
               const _InfoCard(
                 icon: Icons.fact_check_outlined,
+                iconColor: AppColors.textSecondary,
                 title: 'Chưa có dữ liệu đối soát',
+                status: StatusChip(
+                  label: 'Chưa có dữ liệu',
+                  severity: StatusSeverity.neutral,
+                  compact: true,
+                ),
                 body:
                     'Báo cáo sẽ xuất hiện sau khi đóng ca và hoàn tất kiểm kê.',
               )
@@ -230,16 +235,39 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
             if (data.missingRecipeCount > 0)
               _InfoCard(
                 icon: Icons.menu_book_outlined,
+                iconColor: AppColors.statusWatch,
                 title: '${data.missingRecipeCount} size chưa có công thức',
+                status: const StatusChip(
+                  label: 'Thiếu công thức',
+                  severity: StatusSeverity.attention,
+                  compact: true,
+                ),
                 body: 'Đối soát nguyên liệu có thể chưa tính đủ phần tiêu hao.',
                 onTap: () => setState(() => _tab = 2),
               ),
             for (final item in data.lowStock)
               _InfoCard(
                 icon: Icons.inventory_2_outlined,
-                title: '${item['name']} dưới ngưỡng tồn',
-                body: 'Tồn dự kiến ${item['expected_qty']} ${item['unit']} · '
-                    'ngưỡng ${item['minimum_qty']} ${item['unit']}',
+                iconColor: _stockSeverity(_number(item['expected_qty'])) ==
+                        StatusSeverity.critical
+                    ? AppColors.statusOff
+                    : AppColors.statusWatch,
+                title: '${item['name']}',
+                status: StatusChip(
+                  label: _number(item['expected_qty']) < 0
+                      ? 'Tồn âm'
+                      : 'Dưới ngưỡng',
+                  severity: _stockSeverity(
+                    _number(item['expected_qty']),
+                    belowThreshold: true,
+                  ),
+                  compact: true,
+                ),
+                body: _number(item['expected_qty']) < 0
+                    ? 'Tồn dự kiến ${formatQuantity(_number(item['expected_qty']), unit: '${item['unit']}')}. '
+                        'Cần kiểm tra kiểm kê, nhập hàng và hao hụt.'
+                    : 'Tồn dự kiến ${formatQuantity(_number(item['expected_qty']), unit: '${item['unit']}')} · '
+                        'ngưỡng ${formatQuantity(_number(item['minimum_qty']), unit: '${item['unit']}')}',
                 onTap: () => setState(() => _tab = 3),
               ),
             if (data.pendingInvites > 0)
@@ -254,7 +282,13 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
                 data.pendingInvites == 0)
               const _InfoCard(
                 icon: Icons.check_circle_outline,
+                iconColor: AppColors.statusOk,
                 title: 'Không có nhắc việc mới',
+                status: StatusChip(
+                  label: 'Ổn',
+                  severity: StatusSeverity.healthy,
+                  compact: true,
+                ),
                 body: 'Các cảnh báo sẽ hiện ở đây khi có dữ liệu cần xem.',
               ),
             const SizedBox(height: 20),
@@ -285,8 +319,8 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         ),
       );
 
-  Widget _reconcileList(OwnerDashboardData data) => ListView(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+  Widget _reconcileList(OwnerDashboardData data) => PageScaffold(
+        header: _pageHeader(),
         children: [
           Row(children: [
             if (_selectedReport != null)
@@ -332,8 +366,8 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
             .toList()
         : <Map<String, dynamic>>[];
     final shift = report.shift;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+    return PageScaffold(
+      header: _pageHeader(),
       children: [
         Row(children: [
           IconButton(
@@ -345,7 +379,13 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         ]),
         Text(_shiftLabel(shift), style: AppTextStyles.caption),
         const SizedBox(height: 14),
-        _CashResultCard(cash: cash, variance: variance),
+        _CashResultCard(
+          cash: cash,
+          variance: variance,
+          severity: report.overall == 'no_data'
+              ? StatusSeverity.neutral
+              : _cashVarianceSeverity(variance),
+        ),
         const SizedBox(height: 16),
         _ReviewEditor(
           report: report,
@@ -401,17 +441,25 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         if (flagged.isEmpty)
           const _InfoCard(
             icon: Icons.check_circle_outline,
+            iconColor: AppColors.statusOk,
             title: 'Không có nguyên liệu bị cảnh báo',
+            status: StatusChip(
+              label: 'Ổn',
+              severity: StatusSeverity.healthy,
+              compact: true,
+            ),
             body: 'Kết quả dựa trên số kiểm kê và sổ kho của ca này.',
           )
         else
           ...flagged.map((row) => _InfoCard(
                 icon: Icons.warning_amber_rounded,
-                title:
-                    '${row['ingredient_name'] ?? 'Nguyên liệu'} · ${row['status']}',
-                body: 'Lý thuyết ${row['theoretical_used'] ?? '—'} · '
-                    'thực dùng ${row['actual_used'] ?? '—'} · '
-                    'chênh ${row['adjusted_variance'] ?? '—'} ${row['unit'] ?? ''}. '
+                iconColor: _reportStatusColor('${row['status']}'),
+                title: '${row['ingredient_name'] ?? 'Nguyên liệu'}',
+                status: _reportStatusChip('${row['status']}', compact: true),
+                body:
+                    'Lý thuyết ${_quantityOrDash(row['theoretical_used'], '${row['unit'] ?? ''}')} · '
+                    'thực dùng ${_quantityOrDash(row['actual_used'], '${row['unit'] ?? ''}')} · '
+                    'chênh ${_signedQuantityOrDash(row['adjusted_variance'], '${row['unit'] ?? ''}')}. '
                     'Đây là tín hiệu cần kiểm tra, chưa phải kết luận thất thoát.',
               )),
         const SizedBox(height: 12),
@@ -434,102 +482,188 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
     );
   }
 
-  Widget _menu(OwnerDashboardData data) => ListView(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+  Widget _menu(OwnerDashboardData data) => PageScaffold(
+        header: _pageHeader(),
         children: [
-          const Text('Thực đơn', style: AppTextStyles.display),
-          const SizedBox(height: 12),
+          Row(children: [
+            const Expanded(
+                child: Text('Thực đơn', style: AppTextStyles.display)),
+            FilledButton.tonalIcon(
+              onPressed: () => _openMenuManagement(),
+              icon: const Icon(Icons.tune_rounded),
+              label: const Text('Quản lý'),
+              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          if (data.missingRecipeCount > 0) ...[
+            _InfoCard(
+              icon: Icons.warning_amber_rounded,
+              iconColor: AppColors.statusAttention,
+              title: '${data.missingRecipeCount} size thiếu công thức',
+              status: const StatusChip(
+                label: 'Cần bổ sung',
+                severity: StatusSeverity.attention,
+                compact: true,
+              ),
+              body: 'Hoàn thiện công thức để đối soát nguyên liệu chính xác.',
+              onTap: _openMenuManagement,
+              showArrow: true,
+            ),
+            const SizedBox(height: 4),
+          ],
           if (data.menu.isEmpty)
             const _InfoCard(
               icon: Icons.menu_book_outlined,
+              iconColor: AppColors.textSecondary,
               title: 'Chưa có món đang bán',
+              status: StatusChip(
+                label: 'Chưa có dữ liệu',
+                severity: StatusSeverity.neutral,
+                compact: true,
+              ),
               body: 'Thêm món và size để bắt đầu nhận đơn.',
             )
           else
             ...data.menu.map((row) => _InfoCard(
                   icon: Icons.local_cafe_outlined,
                   title: '${row['item_name']} · ${row['size_name']}',
+                  status: row['has_recipe'] == true
+                      ? null
+                      : const StatusChip(
+                          label: 'Thiếu công thức',
+                          severity: StatusSeverity.attention,
+                          compact: true,
+                        ),
                   body: formatVnd(_number(row['price'])),
+                  onTap: _openMenuManagement,
+                  showArrow: true,
                 )),
-          if (data.missingRecipeCount > 0)
-            _InfoCard(
-              icon: Icons.warning_amber_rounded,
-              title: '${data.missingRecipeCount} size thiếu công thức',
-              body: 'Cần bổ sung để kết quả đối soát nguyên liệu đầy đủ hơn.',
-            ),
         ],
       );
 
-  Widget _stock(OwnerDashboardData data) => ListView(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+  Widget _stock(OwnerDashboardData data) => PageScaffold(
+        header: _pageHeader(),
         children: [
           const Text('Kho', style: AppTextStyles.display),
           const SizedBox(height: 12),
           if (data.expectedStock.isEmpty)
             const _InfoCard(
               icon: Icons.inventory_2_outlined,
+              iconColor: AppColors.textSecondary,
               title: 'Chưa có số liệu tồn kho',
+              status: StatusChip(
+                label: 'Chưa có dữ liệu',
+                severity: StatusSeverity.neutral,
+                compact: true,
+              ),
               body: 'Tồn dự kiến sẽ xuất hiện sau khi có kiểm kê.',
             )
           else
-            ...data.expectedStock.map((row) => _InfoCard(
+            ..._stockRowsBySeverity(data).map((row) => _InfoCard(
                   icon: Icons.inventory_2_outlined,
+                  iconColor: row['expected_qty'] == null
+                      ? AppColors.textSecondary
+                      : _stockSeverity(_number(row['expected_qty'])) ==
+                              StatusSeverity.critical
+                          ? AppColors.statusOff
+                          : _isBelowThreshold(row, data)
+                              ? AppColors.statusWatch
+                              : AppColors.statusOk,
                   title: '${row['name'] ?? 'Nguyên liệu'}',
+                  status: row['expected_qty'] == null
+                      ? const StatusChip(
+                          label: 'Chưa có số liệu',
+                          severity: StatusSeverity.neutral,
+                          compact: true,
+                        )
+                      : StatusChip(
+                          label: _stockStatusLabel(row, data),
+                          severity: _stockSeverity(
+                            _number(row['expected_qty']),
+                            belowThreshold: _isBelowThreshold(row, data),
+                          ),
+                          compact: true,
+                        ),
                   body: row['expected_qty'] == null
                       ? 'Chưa có lần kiểm kê · ${row['unit'] ?? ''}'
-                      : 'Tồn dự kiến ${row['expected_qty']} ${row['unit'] ?? ''}'
-                          '${_minimumStock(row, data)}',
+                      : _number(row['expected_qty']) < 0
+                          ? 'Tồn dự kiến âm '
+                              '${formatQuantity(_number(row['expected_qty']).abs(), unit: '${row['unit'] ?? ''}')}. Cần kiểm tra kiểm kê và hao hụt.'
+                          : 'Tồn dự kiến ${formatQuantity(_number(row['expected_qty']), unit: '${row['unit'] ?? ''}')}'
+                              '${_minimumStock(row, data)}',
                 )),
           const SizedBox(height: 12),
-          _ActionCard(
-            title: 'Ghi hao hụt',
-            subtitle: data.openShift == null
-                ? 'Cần mở ca trước'
-                : 'Ghi nhận trong ca đang mở',
-            icon: Icons.delete_outline,
-            enabled: data.openShift != null,
-            onTap: () =>
-                Navigator.of(context).push<void>(MaterialPageRoute<void>(
-              builder: (_) => WasteScreen(
-                  repository: RpcInventoryRepository(
-                      SupabaseRpcClient(Supabase.instance.client))),
-            )),
-          ),
-          _ActionCard(
-            title: 'Thu / chi tiền mặt',
-            subtitle: data.openShift == null
-                ? 'Cần mở ca trước'
-                : 'Ghi nhận trong ca đang mở',
-            icon: Icons.payments_outlined,
-            enabled: data.openShift != null,
-            onTap: () =>
-                Navigator.of(context).push<void>(MaterialPageRoute<void>(
-              builder: (_) => CashScreen(
-                  repository: RpcInventoryRepository(
-                      SupabaseRpcClient(Supabase.instance.client))),
-            )),
-          ),
+          const _SectionTitle(title: 'Thao tác kho'),
+          Row(children: [
+            Expanded(
+              child: _StockActionButton(
+                title: 'Ghi hao hụt',
+                icon: ForeActionIcons.waste,
+                enabled: data.openShift != null,
+                onTap: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => WasteScreen(
+                      repository: context.read<InventoryRepository>(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StockActionButton(
+                title: 'Thu / chi',
+                icon: ForeActionIcons.cashMovement,
+                enabled: data.openShift != null,
+                onTap: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => CashScreen(
+                      repository: context.read<CashRepository>(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ]),
         ],
       );
 
   Widget _more(OwnerDashboardData data) {
-    final inventory =
-        RpcInventoryRepository(SupabaseRpcClient(Supabase.instance.client));
     return MoreView(
+      header: _pageHeader(),
       personName: widget.profile.fullName,
       roleLabel: 'Chủ quán',
       shopName: widget.profile.shopName,
       hasOpenShift: data.openShift != null,
       isOwner: true,
-      onWaste: () => Navigator.of(context).push<void>(MaterialPageRoute<void>(
-          builder: (_) => WasteScreen(repository: inventory))),
-      onCash: () => Navigator.of(context).push<void>(MaterialPageRoute<void>(
-          builder: (_) => CashScreen(repository: inventory))),
+      onWaste: () => Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => WasteScreen(
+            repository: context.read<InventoryRepository>(),
+          ),
+        ),
+      ),
+      onCash: () => Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => CashScreen(
+            repository: context.read<CashRepository>(),
+          ),
+        ),
+      ),
       onSwitchShop: () => showShopSwitcher(context),
       onInbox: () => Navigator.of(context).pushNamed(AppRoutes.inbox),
       onTeam: () => Navigator.of(context).pushNamed(AppRoutes.team),
       onSignOut: _signOut,
     );
+  }
+
+  Future<void> _openMenuManagement() async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+          builder: (_) => const OwnerMenuManagementScreen()),
+    );
+    if (changed == true && mounted) await _refresh();
   }
 
   Future<void> _signOut() async {
@@ -552,7 +686,11 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   Future<bool> _saveShiftReview(
       OwnerShiftReport report, bool handled, String? note) async {
     try {
-      await _dashboard.saveReview(report, handled, note);
+      await context.read<OwnerDashboardController>().saveReview(
+            report,
+            handled,
+            note,
+          );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đã lưu trạng thái và ghi chú.')),
@@ -566,6 +704,16 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
         );
       }
       return false;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Không lưu được trạng thái đối soát. Vui lòng thử lại.'),
+          ),
+        );
+      }
+      return false;
     }
   }
 
@@ -575,7 +723,8 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
       MaterialPageRoute<Object?>(
         builder: (_) => OwnerNotificationsScreen(
           data: data,
-          onMarkRead: _dashboard.markNotificationsRead,
+          onMarkRead:
+              context.read<OwnerDashboardController>().markNotificationsRead,
         ),
       ),
     );
@@ -602,9 +751,12 @@ class _RevenueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final change = data.salesChangePercent;
-    final changeLabel = change == null
-        ? 'Chưa có dữ liệu ngày kinh doanh trước'
-        : '${change >= 0 ? '+' : ''}${change.toStringAsFixed(0)}% so với ngày kinh doanh trước';
+    final businessDayComplete = !DateTime.now().isBefore(data.businessEnd);
+    final changeLabel = !businessDayComplete
+        ? 'Chưa so sánh: ngày kinh doanh chưa kết thúc.'
+        : change == null
+            ? 'Chưa có dữ liệu ngày kinh doanh trước'
+            : '${change >= 0 ? '+' : ''}${change.toStringAsFixed(0)}% so với ngày kinh doanh trước';
     return ForeCard(
       padding: const EdgeInsets.all(18),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -617,7 +769,7 @@ class _RevenueCard extends StatelessWidget {
           style: AppTextStyles.caption,
         ),
         const SizedBox(height: 4),
-        Text(changeLabel, style: AppTextStyles.captionStrong),
+        Text(changeLabel, style: AppTextStyles.caption),
       ]),
     );
   }
@@ -666,10 +818,8 @@ class _ShiftCard extends StatelessWidget {
         body: shift == null
             ? 'Mở màn hình vận hành để bắt đầu ca.'
             : 'Ca của ${shift!['opened_by_name'] ?? 'nhân viên'} · mở lúc ${formatHm(DateTime.parse(shift!['opened_at'] as String).toLocal())}',
-        action: TextButton(
-          onPressed: onOpenOps,
-          child: Text(shift == null ? 'Mở ca' : 'Vào vận hành'),
-        ),
+        onTap: onOpenOps,
+        showArrow: true,
       );
 }
 
@@ -693,28 +843,107 @@ class _ReportCard extends StatelessWidget {
     final primary = ingredients.isEmpty ? null : ingredients.first;
     final summary = primary == null
         ? 'Nguyên liệu: không có cảnh báo'
-        : '${primary['ingredient_name']}: +${primary['adjusted_variance']} ${primary['unit']}'
-            '${primary['equiv_revenue'] == null ? '' : ' · ~${formatVnd(_number(primary['equiv_revenue']))}'}';
+        : '${primary['ingredient_name']}: ${_signedQuantityOrDash(primary['adjusted_variance'], '${primary['unit'] ?? ''}')}'
+            '${primary['equiv_revenue'] == null ? '' : ' · ước tính ≈ ${formatVnd(_number(primary['equiv_revenue']))}'}';
     final openedBy = report.shift['opened_by_name'] ?? 'Nhân viên';
-    final handledText = report.handled ? 'Đã xử lý' : 'Chưa xử lý';
-    return _InfoCard(
-      icon: status == 'alert'
-          ? Icons.error_outline
-          : status == 'warn'
-              ? Icons.warning_amber_rounded
-              : Icons.check_circle_outline,
-      title: _shiftLabel(report.shift),
-      body:
-          '$openedBy · ${_statusText(status)} · Tiền mặt ${formatVnd(variance)} · $handledText\n$summary',
-      action: TextButton(onPressed: onTap, child: const Text('Xem chi tiết')),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSizes.cardGap),
+      child: ForeCard(
+        padding: EdgeInsets.zero,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(
+                child:
+                    Text(_shiftLabel(report.shift), style: AppTextStyles.title),
+              ),
+              const SizedBox(width: 8),
+              _reportStatusChip(status, compact: true),
+            ]),
+            const SizedBox(height: 8),
+            Text('Nhân viên: $openedBy', style: AppTextStyles.caption),
+            const SizedBox(height: 8),
+            _ReportMetricRow(
+              label: 'Tiền mặt',
+              value: _cashVarianceLabel(variance),
+              emphasis: true,
+            ),
+            const SizedBox(height: 5),
+            _ReportMetricRow(label: 'Nguyên liệu', value: summary),
+            const SizedBox(height: 10),
+            Row(children: [
+              StatusChip(
+                label: report.handled ? 'Đã xử lý' : 'Chưa xử lý',
+                severity: report.handled
+                    ? StatusSeverity.healthy
+                    : StatusSeverity.attention,
+                compact: true,
+              ),
+              const Spacer(),
+              const Text('Xem chi tiết', style: AppTextStyles.bodyStrong),
+              const SizedBox(width: 2),
+              const Icon(Icons.arrow_forward_rounded,
+                  size: 18, color: AppColors.brand),
+            ]),
+          ]),
+        ),
+      ),
     );
   }
 }
 
+class _ReportMetricRow extends StatelessWidget {
+  const _ReportMetricRow({
+    required this.label,
+    required this.value,
+    this.emphasis = false,
+  });
+
+  final String label;
+  final String value;
+  final bool emphasis;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 82, child: Text(label, style: AppTextStyles.caption)),
+          Expanded(
+            child: Text(
+              value,
+              style: emphasis
+                  ? TextStyle(
+                      fontSize: 15,
+                      height: 1.35,
+                      fontWeight: FontWeight.w700,
+                      color: _cashVarianceColor(value),
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    )
+                  : AppTextStyles.bodyStrong,
+            ),
+          ),
+        ],
+      );
+}
+
+Color _cashVarianceColor(String label) => label.contains('thiếu')
+    ? AppColors.statusCritical
+    : label.contains('thừa')
+        ? AppColors.statusAttention
+        : AppColors.statusHealthy;
+
 class _CashResultCard extends StatelessWidget {
-  const _CashResultCard({required this.cash, required this.variance});
+  const _CashResultCard({
+    required this.cash,
+    required this.variance,
+    required this.severity,
+  });
   final Map<String, dynamic> cash;
   final int variance;
+  final StatusSeverity severity;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -726,11 +955,20 @@ class _CashResultCard extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Tiền mặt cuối ca',
-                style: TextStyle(color: Colors.white70)),
+            Row(children: [
+              const Expanded(
+                child: Text('Tiền mặt cuối ca',
+                    style: TextStyle(color: Colors.white70)),
+              ),
+              StatusChip(
+                label: _cashVarianceStatus(variance),
+                severity: severity,
+                compact: true,
+              ),
+            ]),
             const SizedBox(height: 8),
             Text(
-              '${variance < 0 ? 'Thiếu' : variance > 0 ? 'Thừa' : 'Khớp'} ${formatVnd(variance.abs())}',
+              formatVnd(variance.abs()),
               style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -799,8 +1037,17 @@ class _ReviewEditorState extends State<_ReviewEditor> {
   Widget build(BuildContext context) => ForeCard(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Trạng thái xử lý: ${_handled ? 'Đã xử lý' : 'Chưa xử lý'}',
-              style: AppTextStyles.title),
+          Row(children: [
+            const Expanded(
+              child: Text('Trạng thái xử lý', style: AppTextStyles.title),
+            ),
+            StatusChip(
+              label: _handled ? 'Đã xử lý' : 'Chưa xử lý',
+              severity:
+                  _handled ? StatusSeverity.healthy : StatusSeverity.attention,
+              compact: true,
+            ),
+          ]),
           const SizedBox(height: 10),
           TextField(
             controller: _note,
@@ -880,34 +1127,43 @@ class _InfoCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.body,
-    this.action,
     this.onTap,
+    this.iconColor = AppColors.brandAccent,
+    this.status,
+    this.showArrow = false,
   });
   final IconData icon;
   final String title;
   final String body;
-  final Widget? action;
   final VoidCallback? onTap;
+  final Color iconColor;
+  final Widget? status;
+  final bool showArrow;
 
   @override
   Widget build(BuildContext context) {
     final child = ForeCard(
       padding: const EdgeInsets.all(15),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, color: AppColors.brandAccent),
+        Icon(icon, color: iconColor),
         const SizedBox(width: 12),
         Expanded(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: AppTextStyles.title),
+            if (status != null) ...[
+              const SizedBox(height: 6),
+              status!,
+            ],
             const SizedBox(height: 4),
             Text(body, style: AppTextStyles.caption),
-            if (action != null) ...[
-              const SizedBox(height: 4),
-              Align(alignment: Alignment.centerRight, child: action!),
-            ],
           ]),
         ),
+        if (showArrow) ...[
+          const SizedBox(width: 4),
+          const Icon(Icons.arrow_forward_rounded,
+              size: 18, color: AppColors.brand),
+        ],
       ]),
     );
     return Padding(
@@ -941,12 +1197,49 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: ForeCard(
-          child: ListTile(
-            enabled: enabled,
-            leading: Icon(icon, color: AppColors.brandAccent),
-            title: Text(title),
-            subtitle: Text(subtitle),
-            onTap: enabled ? onTap : null,
+          padding: EdgeInsets.zero,
+          child: Material(
+            type: MaterialType.transparency,
+            borderRadius: BorderRadius.circular(20),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: enabled ? onTap : null,
+              child: ListTile(
+                enabled: enabled,
+                leading: Icon(icon, color: AppColors.brandAccent),
+                title: Text(title),
+                subtitle: Text(subtitle),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class _StockActionButton extends StatelessWidget {
+  const _StockActionButton({
+    required this.title,
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 54,
+        child: FilledButton.tonalIcon(
+          onPressed: enabled ? onTap : null,
+          icon: Icon(icon, size: 19),
+          label: Text(title, maxLines: 2, textAlign: TextAlign.center),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            textStyle: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
       );
@@ -1003,13 +1296,93 @@ String _businessDayLabel(OwnerDashboardData data) =>
     'Ngày kinh doanh: ${formatHm(data.businessStart)} · ${data.businessStart.day}/${data.businessStart.month} – 05:59 hôm sau';
 
 String _minimumStock(Map<String, dynamic> ingredient, OwnerDashboardData data) {
-  final matching = data.lowStock.where(
-    (item) => item['ingredient_id'] == ingredient['ingredient_id'],
-  );
+  final matching = data.lowStock
+      .where((item) => item['ingredient_id'] == ingredient['ingredient_id']);
   if (matching.isEmpty) return '';
-  final threshold = matching.first['minimum_qty'];
-  return ' · Dưới ngưỡng $threshold ${ingredient['unit'] ?? ''}';
+  final threshold = _number(matching.first['minimum_qty']);
+  return ' · Ngưỡng ${formatQuantity(threshold, unit: '${ingredient['unit'] ?? ''}')}';
 }
+
+bool _isBelowThreshold(
+  Map<String, dynamic> ingredient,
+  OwnerDashboardData data,
+) =>
+    data.lowStock
+        .any((item) => item['ingredient_id'] == ingredient['ingredient_id']);
+
+StatusSeverity _stockSeverity(int quantity, {bool belowThreshold = false}) =>
+    quantity < 0
+        ? StatusSeverity.critical
+        : belowThreshold
+            ? StatusSeverity.attention
+            : StatusSeverity.healthy;
+
+List<Map<String, dynamic>> _stockRowsBySeverity(OwnerDashboardData data) {
+  final rows = data.expectedStock.toList();
+  int rank(Map<String, dynamic> row) {
+    if (row['expected_qty'] == null) return 3;
+    final severity = _stockSeverity(
+      _number(row['expected_qty']),
+      belowThreshold: _isBelowThreshold(row, data),
+    );
+    return switch (severity) {
+      StatusSeverity.critical => 0,
+      StatusSeverity.attention => 1,
+      StatusSeverity.healthy => 2,
+      StatusSeverity.neutral => 3,
+    };
+  }
+
+  rows.sort((a, b) {
+    final bySeverity = rank(a).compareTo(rank(b));
+    return bySeverity != 0
+        ? bySeverity
+        : '${a['name'] ?? ''}'.compareTo('${b['name'] ?? ''}');
+  });
+  return rows;
+}
+
+String _stockStatusLabel(Map<String, dynamic> row, OwnerDashboardData data) {
+  final quantity = _number(row['expected_qty']);
+  if (quantity < 0) return 'Tồn âm';
+  return _isBelowThreshold(row, data) ? 'Dưới ngưỡng' : 'Đủ tồn';
+}
+
+StatusSeverity _reportStatusSeverity(String status) => switch (status) {
+      'alert' => StatusSeverity.critical,
+      'warn' => StatusSeverity.attention,
+      'ok' => StatusSeverity.healthy,
+      _ => StatusSeverity.neutral,
+    };
+
+String _reportStatusLabel(String status) => switch (status) {
+      'alert' => 'Lệch lớn',
+      'warn' => 'Cần kiểm tra',
+      'ok' => 'Ổn',
+      _ => 'Chưa đủ dữ liệu',
+    };
+
+StatusChip _reportStatusChip(String status, {bool compact = false}) =>
+    StatusChip(
+      label: _reportStatusLabel(status),
+      severity: _reportStatusSeverity(status),
+      compact: compact,
+    );
+
+Color _reportStatusColor(String status) =>
+    switch (_reportStatusSeverity(status)) {
+      StatusSeverity.critical => AppColors.statusOff,
+      StatusSeverity.attention => AppColors.statusWatch,
+      StatusSeverity.healthy => AppColors.statusOk,
+      StatusSeverity.neutral => AppColors.textSecondary,
+    };
+
+String _quantityOrDash(dynamic value, String unit) =>
+    value is num ? formatQuantity(value.round(), unit: unit) : '—';
+
+String _signedQuantityOrDash(dynamic value, String unit) => value is num
+    ? '${value > 0 ? '+' : ''}${formatQuantity(value.round(), unit: unit)}'
+    : '—';
 
 String _shiftLabel(Map<String, dynamic> shift) {
   final opened = DateTime.tryParse('${shift['opened_at']}')?.toLocal();
@@ -1019,12 +1392,24 @@ String _shiftLabel(Map<String, dynamic> shift) {
   return 'Ca $day · ${formatHm(opened)}${closed == null ? '' : '–${formatHm(closed)}'}';
 }
 
-String _statusText(String status) => switch (status) {
-      'alert' => 'Lệch lớn',
-      'warn' => 'Cần kiểm tra',
-      'ok' => 'Ổn',
-      _ => 'Chưa đủ dữ liệu',
-    };
+String _cashVarianceLabel(int variance) => variance < 0
+    ? 'Tiền mặt thiếu ${formatVnd(variance.abs())}'
+    : variance > 0
+        ? 'Tiền mặt thừa ${formatVnd(variance)}'
+        : 'Tiền mặt khớp';
+
+String _cashVarianceStatus(int variance) => variance < 0
+    ? 'Thiếu'
+    : variance > 0
+        ? 'Thừa'
+        : 'Khớp';
+
+StatusSeverity _cashVarianceSeverity(int variance) {
+  final amount = variance.abs();
+  if (amount >= 50000) return StatusSeverity.critical;
+  if (amount >= 20000) return StatusSeverity.attention;
+  return StatusSeverity.healthy;
+}
 
 int _number(dynamic value) => value is num ? value.round() : 0;
 

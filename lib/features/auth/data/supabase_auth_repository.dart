@@ -90,6 +90,7 @@ class SupabaseAuthRepository implements AuthRepository {
             email: StaffCredentials.emailFor(contact),
             password: StaffCredentials.passwordFor(contact),
             data: {
+              ...StaffCredentials.demoContactMetadata(contact),
               'full_name': fullName,
               'birth_date': _dateOnly(birthDate),
             },

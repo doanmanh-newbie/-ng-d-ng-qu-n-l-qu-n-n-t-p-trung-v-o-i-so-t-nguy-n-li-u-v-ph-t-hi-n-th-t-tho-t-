@@ -272,7 +272,7 @@ class _NoShiftCard extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 12),
-          FadeSlideIn(
+          const FadeSlideIn(
             child: _BreathingIcon(
               child: ForeIconView(
                 ForeIcon.calendar,

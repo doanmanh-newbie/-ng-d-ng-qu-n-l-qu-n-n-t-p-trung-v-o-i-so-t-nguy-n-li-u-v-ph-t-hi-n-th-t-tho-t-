@@ -9,7 +9,10 @@ import '../owner/owner_home_screen.dart';
 
 /// Chọn giao diện theo vai trò thật trong hồ sơ quán; không dựa vào lựa chọn ở màn đăng nhập.
 class RoleHomeScreen extends StatelessWidget {
-  const RoleHomeScreen({super.key});
+  const RoleHomeScreen({super.key, this.staffHomeBuilder});
+
+  /// Lets widget tests verify role routing without opening Supabase screens.
+  final WidgetBuilder? staffHomeBuilder;
 
   static bool isOwnerRole(StaffRole role) => role == StaffRole.owner;
 
@@ -28,6 +31,6 @@ class RoleHomeScreen extends StatelessWidget {
     if (isOwnerRole(state.profile.role)) {
       return OwnerHomeScreen(profile: state.profile);
     }
-    return const OpsHomeScreen();
+    return staffHomeBuilder?.call(context) ?? const OpsHomeScreen();
   }
 }

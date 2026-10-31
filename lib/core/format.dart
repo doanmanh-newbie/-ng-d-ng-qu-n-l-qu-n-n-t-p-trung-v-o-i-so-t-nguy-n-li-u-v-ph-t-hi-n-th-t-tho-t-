@@ -4,6 +4,14 @@ import 'package:flutter/services.dart';
 String formatVnd(int amount) =>
     '${amount < 0 ? '-' : ''}${formatThousands(amount.abs())}đ';
 
+/// Định dạng số lượng nguyên theo quy ước của app, có dấu chấm ngăn nghìn.
+/// Ví dụ: `formatQuantity(4400, unit: 'g')` → `4.400 g`.
+String formatQuantity(int amount, {String? unit}) {
+  final value = formatThousands(amount);
+  final suffix = unit?.trim();
+  return suffix == null || suffix.isEmpty ? value : '$value $suffix';
+}
+
 /// Số có dấu chấm ngăn nghìn, không có chữ "đ" (ví dụ 500.000).
 String formatThousands(int amount) {
   final s = amount.abs().toString();
@@ -44,7 +52,8 @@ String formatWait(Duration duration) {
   return minutes == 0 ? '$hours giờ' : '$hours giờ $minutes phút';
 }
 
-String formatServings(int count, String label) => '$count $label';
+String formatServings(int count, String label) =>
+    formatQuantity(count, unit: label);
 
 /// Giờ phút dạng 08:02 (theo giờ địa phương của máy).
 String formatHm(DateTime time) {

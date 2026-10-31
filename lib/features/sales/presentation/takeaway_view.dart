@@ -11,6 +11,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/fore_card.dart';
 import '../../../core/widgets/ops_icon.dart';
 import '../../../core/widgets/notify.dart';
+import '../../../core/widgets/status_chip.dart';
 import '../application/takeaway_controller.dart';
 import '../domain/sales_models.dart';
 
@@ -49,7 +50,8 @@ class TakeawayView extends StatelessWidget {
                     ? '\n\nChi tiết kỹ thuật: ${failure.detail}'
                     : '';
             return ErrorRetry(
-              message: '${failure?.userMessage ?? 'Không tải được danh sách đơn.'}$diagnostic',
+              message:
+                  '${failure?.userMessage ?? 'Không tải được danh sách đơn.'}$diagnostic',
               onRetry: c.load,
             );
           }
@@ -156,10 +158,10 @@ class _OrderCard extends StatelessWidget {
                   style: AppTextStyles.captionStrong),
               const Spacer(),
               if (longest)
-                const _Badge(
+                const StatusChip(
                   label: 'Chờ lâu nhất',
-                  color: AppColors.statusWatch,
-                  background: AppColors.statusWatchTint,
+                  severity: StatusSeverity.attention,
+                  compact: true,
                 ),
             ],
           ),
@@ -174,13 +176,12 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _Badge(
+              StatusChip(
                 label: order.isPaid ? 'Đã thu tiền' : 'Chưa thu tiền',
-                color:
-                    order.isPaid ? AppColors.statusOk : AppColors.textSecondary,
-                background: order.isPaid
-                    ? AppColors.statusOkTint
-                    : AppColors.surfaceTint,
+                severity: order.isPaid
+                    ? StatusSeverity.healthy
+                    : StatusSeverity.neutral,
+                compact: true,
               ),
               const SizedBox(width: 10),
               Text('Chờ ${formatWait(waited)}', style: AppTextStyles.caption),
@@ -199,27 +200,4 @@ class _OrderCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge(
-      {required this.label, required this.color, required this.background});
-
-  final String label;
-  final Color color;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-            color: background, borderRadius: BorderRadius.circular(999)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          child: Text(
-            label,
-            style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w700, color: color),
-          ),
-        ),
-      );
 }

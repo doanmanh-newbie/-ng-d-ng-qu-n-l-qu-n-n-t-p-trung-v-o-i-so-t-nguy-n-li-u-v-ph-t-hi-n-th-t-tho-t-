@@ -325,8 +325,9 @@ class FakeRpcClient implements RpcClient {
   @override
   Future<dynamic> call(String fn, [Map<String, dynamic>? params]) async {
     calls.add((fn: fn, params: params));
-    if (!responses.containsKey(fn))
+    if (!responses.containsKey(fn)) {
       throw StateError('FakeRpcClient: chưa dựng dữ liệu cho "$fn"');
+    }
     final r = responses[fn];
     if (r is AppFailure) throw r;
     return r;

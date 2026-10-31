@@ -2,12 +2,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'owner_dashboard_models.dart';
 
+abstract interface class OwnerDashboardDataSource {
+  Future<OwnerDashboardData> load();
+
+  Future<void> setShiftReview(String shiftId, bool handled, String? note);
+
+  Future<void> markNotificationsRead(List<String> keys);
+}
+
 /// Dữ liệu thật dành cho dashboard chủ quán. Không dùng số minh họa từ bản thiết kế.
-class OwnerDashboardRepository {
+class OwnerDashboardRepository implements OwnerDashboardDataSource {
   OwnerDashboardRepository(this._client);
 
   final SupabaseClient _client;
 
+  @override
   Future<OwnerDashboardData> load() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -46,10 +55,17 @@ class OwnerDashboardRepository {
       _client
           .from('v_expected_stock')
           .select('ingredient_id, name, unit, expected_qty, last_count_at'),
+      _client.from('recipe_lines').select('size_id'),
     ]);
-    final menu = (secondary[0] as List<dynamic>)
-        .map((row) => Map<String, dynamic>.from(row as Map))
-        .toList(growable: false);
+    final recipeSizeIds = (secondary[2] as List<dynamic>)
+        .whereType<Map>()
+        .map((row) => '${row['size_id']}')
+        .toSet();
+    final menu = (secondary[0] as List<dynamic>).map((row) {
+      final menuRow = Map<String, dynamic>.from(row as Map);
+      menuRow['has_recipe'] = recipeSizeIds.contains('${menuRow['size_id']}');
+      return menuRow;
+    }).toList(growable: false);
     final expectedStock = (secondary[1] as List<dynamic>)
         .map((row) => Map<String, dynamic>.from(row as Map))
         .toList(growable: false);
@@ -86,6 +102,7 @@ class OwnerDashboardRepository {
     );
   }
 
+  @override
   Future<void> setShiftReview(
       String shiftId, bool handled, String? note) async {
     await _client.rpc('set_shift_review', params: {
@@ -95,6 +112,7 @@ class OwnerDashboardRepository {
     });
   }
 
+  @override
   Future<void> markNotificationsRead(List<String> keys) async {
     await _client.rpc('mark_owner_notifications_read', params: {
       'p_keys': keys,

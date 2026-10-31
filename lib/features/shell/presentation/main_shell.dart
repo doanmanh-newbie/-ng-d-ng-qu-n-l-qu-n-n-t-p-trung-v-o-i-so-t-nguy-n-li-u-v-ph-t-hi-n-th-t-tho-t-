@@ -23,7 +23,8 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
-  late final InboxController _inbox = InboxController(context.read<ShopRepository>());
+  late final InboxController _inbox =
+      InboxController(context.read<ShopRepository>());
   ShellTab _tab = ShellTab.home;
   ShellTab? _shakeTab;
   int _shakeTick = 0;
@@ -86,33 +87,33 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     return ChangeNotifierProvider<InboxController>.value(
       value: _inbox,
       child: Scaffold(
-      body: IndexedStack(
-        index: ShellTab.values.indexOf(_tab),
-        children: [
-          const ComingSoonTab(
-            icon: ForeIcon.bag,
-            title: 'Mang đi',
-            message: 'Đơn mang đi đang được làm ở bước sau.',
-          ),
-          const ComingSoonTab(
-            icon: ForeIcon.package,
-            title: 'Kho',
-            message: 'Nhập hàng và đếm kho đang được làm ở bước sau.',
-          ),
-          const HomeTab(),
-          const CloseShiftTab(),
-          const MoreTab(),
-        ],
+        body: IndexedStack(
+          index: ShellTab.values.indexOf(_tab),
+          children: const [
+            ComingSoonTab(
+              icon: ForeIcon.bag,
+              title: 'Mang đi',
+              message: 'Đơn mang đi đang được làm ở bước sau.',
+            ),
+            ComingSoonTab(
+              icon: ForeIcon.package,
+              title: 'Kho',
+              message: 'Nhập hàng và đếm kho đang được làm ở bước sau.',
+            ),
+            HomeTab(),
+            CloseShiftTab(),
+            MoreTab(),
+          ],
+        ),
+        bottomNavigationBar: ForeBottomNav(
+          current: _tab,
+          shiftOpen: shiftOpen,
+          shakeTab: _shakeTab,
+          shakeTick: _shakeTick,
+          onSelect: (tab) => setState(() => _tab = tab),
+          onLockedTap: _onLockedTap,
+        ),
       ),
-      bottomNavigationBar: ForeBottomNav(
-        current: _tab,
-        shiftOpen: shiftOpen,
-        shakeTab: _shakeTab,
-        shakeTick: _shakeTick,
-        onSelect: (tab) => setState(() => _tab = tab),
-        onLockedTap: _onLockedTap,
-      ),
-    ),
     );
   }
 }

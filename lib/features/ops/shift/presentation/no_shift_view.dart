@@ -71,19 +71,19 @@ class NoShiftView extends StatelessWidget {
       );
 
   Future<void> _askOpeningCash(BuildContext context) async {
+    final navigator = Navigator.of(context);
     final cash = await showForeSheet<int>(
       context,
       title: 'Mở ca',
       subtitle: 'Nhập số tiền có trong két lúc bắt đầu ca.',
       builder: (_) => const _OpeningCashForm(),
     );
-    if (cash == null || !context.mounted) return;
+    if (cash == null || !navigator.mounted) return;
     try {
       final opened = await shift.openShift(cash);
-      if (opened && context.mounted) {
-        showNotice(context, 'Đã mở ca. Chúc ca làm việc thuận lợi!');
+      if (opened && navigator.mounted) {
         final countNow = await showDialog<bool>(
-          context: context,
+          context: navigator.context,
           builder: (ctx) => AlertDialog(
             title: const Text('Kiểm kê đầu ca'),
             content: const Text(
@@ -100,10 +100,14 @@ class NoShiftView extends StatelessWidget {
             ],
           ),
         );
-        if (countNow == true && context.mounted) onCountOpening();
+        if (countNow == true && navigator.mounted) onCountOpening();
+        if (navigator.mounted) {
+          showNotice(
+              navigator.context, 'Đã mở ca. Chúc ca làm việc thuận lợi!');
+        }
       }
     } on AppFailure catch (f) {
-      if (context.mounted) showFailure(context, f);
+      if (navigator.mounted) showFailure(navigator.context, f);
     }
   }
 }

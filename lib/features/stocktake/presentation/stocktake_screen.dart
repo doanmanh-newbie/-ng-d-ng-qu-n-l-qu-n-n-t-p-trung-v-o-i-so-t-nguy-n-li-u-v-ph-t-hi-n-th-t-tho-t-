@@ -9,6 +9,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/fore_card.dart';
 import '../../../core/widgets/notify.dart';
 import '../../../core/widgets/screen_header.dart';
+import '../../../core/widgets/status_chip.dart';
 import '../application/stocktake_controller.dart';
 import '../domain/stocktake_models.dart';
 import '../domain/stocktake_repository.dart';
@@ -74,8 +75,9 @@ class _StocktakeScreenState extends State<StocktakeScreen> {
           canPop: !_c.hasPending,
           onPopInvokedWithResult: (didPop, _) async {
             if (didPop) return;
-            if (await _confirmLeave() && context.mounted)
+            if (await _confirmLeave() && context.mounted) {
               Navigator.of(context).pop();
+            }
           },
           child: Scaffold(
             backgroundColor: AppColors.background,
@@ -289,10 +291,11 @@ class _CountRowState extends State<_CountRow> {
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      const Icon(Icons.check_circle_rounded,
-                          color: AppColors.statusOk, size: 20),
-                      const SizedBox(width: 6),
-                      const Text('Đã đếm', style: AppTextStyles.bodyStrong),
+                      const StatusChip(
+                        label: 'Đã đếm',
+                        severity: StatusSeverity.healthy,
+                        compact: true,
+                      ),
                       TextButton(
                           onPressed: widget.enabled ? widget.onRecount : null,
                           child: const Text('Đếm lại')),

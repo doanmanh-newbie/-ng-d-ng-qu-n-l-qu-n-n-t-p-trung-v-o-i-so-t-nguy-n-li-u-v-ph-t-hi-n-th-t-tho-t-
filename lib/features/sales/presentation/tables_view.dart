@@ -13,6 +13,7 @@ import '../../../core/widgets/ops_icon.dart';
 import '../../../core/widgets/fore_sheet.dart';
 import '../../../core/widgets/notify.dart';
 import '../../../core/widgets/pressable_scale.dart';
+import '../../../core/widgets/status_chip.dart';
 import '../application/table_map_controller.dart';
 import '../domain/sales_models.dart';
 
@@ -322,27 +323,12 @@ class _TableCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: busy
-                                ? AppColors.brandAccent
-                                : AppColors.statusOk,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          status,
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: fg),
-                        ),
-                      ],
+                    StatusChip(
+                      label: status,
+                      severity: busy
+                          ? StatusSeverity.neutral
+                          : StatusSeverity.healthy,
+                      compact: true,
                     ),
                     const SizedBox(height: 2),
                     Text(detail, style: TextStyle(fontSize: 14, color: sub)),

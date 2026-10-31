@@ -74,7 +74,7 @@ abstract final class AppTextStyles {
   static const bodyStrong = TextStyle(
       fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink);
   static const captionStrong = TextStyle(
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: FontWeight.w600,
       color: AppColors.textSecondary);
   static const button = TextStyle(fontSize: 16, fontWeight: FontWeight.w700);
@@ -84,7 +84,8 @@ abstract final class AppTextStyles {
       fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.ink);
 
   static const caption = TextStyle(
-    fontSize: 12,
+    fontSize: 13,
     color: AppColors.textSecondary,
+    height: 1.35,
   );
 }

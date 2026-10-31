@@ -235,12 +235,12 @@ class _PendingTile extends StatelessWidget {
                   Text(invite.fullName,
                       style: AppTextStyles.label.copyWith(fontSize: 15)),
                   Text(
-                    '${[
+                    [
                       if (invite.phone != null)
                         Phone.pretty('+${invite.phone}'),
                       if (invite.email != null) invite.email,
                       timeAgo(invite.createdAt)
-                    ].join(' · ')}',
+                    ].join(' · '),
                     style: AppTextStyles.caption,
                   ),
                 ],

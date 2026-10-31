@@ -6,6 +6,10 @@ import 'app_text_styles.dart';
 /// Kích thước dùng chung, khớp bản thiết kế: lề 16, bo góc 12, nút cao 48.
 abstract final class AppSizes {
   static const pagePadding = 16.0;
+  static const pageTopPadding = 16.0;
+  static const pageBottomPadding = 32.0;
+  static const sectionGap = 20.0;
+  static const cardGap = 10.0;
   static const radius = 12.0;
   static const controlHeight = 48.0;
   static const radiusCard = 22.0;
@@ -80,7 +84,7 @@ abstract final class AppTheme {
         indicatorColor: const Color(0xFFDDF1EF),
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
               fontFamily: AppFonts.body,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: states.contains(WidgetState.selected)
                   ? FontWeight.w700
                   : FontWeight.w500,

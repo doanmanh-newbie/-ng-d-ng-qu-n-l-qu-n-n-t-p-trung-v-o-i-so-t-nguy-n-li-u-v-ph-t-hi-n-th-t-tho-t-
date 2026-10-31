@@ -131,7 +131,7 @@ void main() {
 
     test('lỗi lạ cũng được trả về, không văng ra ngoài', () async {
       repo.user = const AuthUser(id: 'u1', email: 'an@quan.vn');
-      repo.failure = UnknownFailure('hỏng');
+      repo.failure = const UnknownFailure('hỏng');
       final c = build();
       final failure = await c.refreshAfterSignIn();
       expect(failure, isA<UnknownFailure>());

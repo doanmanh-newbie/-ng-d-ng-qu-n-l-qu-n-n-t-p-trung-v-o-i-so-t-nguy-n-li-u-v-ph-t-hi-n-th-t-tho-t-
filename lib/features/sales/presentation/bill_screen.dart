@@ -143,8 +143,9 @@ class _BillScreenState extends State<BillScreen> {
           canPop: _c.cart.isEmpty,
           onPopInvokedWithResult: (didPop, _) async {
             if (didPop) return;
-            if (await _confirmLeave() && context.mounted)
+            if (await _confirmLeave() && context.mounted) {
               Navigator.of(context).pop();
+            }
           },
           child: Scaffold(
             backgroundColor: AppColors.background,

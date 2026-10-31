@@ -13,9 +13,14 @@ abstract final class AppColors {
   static const disabledFill = Color(0xFFE3EAE7);
 
   // Màu trạng thái: chỉ dùng cho trạng thái, không dùng làm trang trí.
-  static const statusOk = Color(0xFF1F9D63);
-  static const statusWatch = Color(0xFFE0A100);
-  static const statusOff = Color(0xFFD8433A);
+  static const statusHealthy = Color(0xFF18794E);
+  static const statusAttention = Color(0xFF8A5A00);
+  static const statusCritical = Color(0xFFB42318);
+
+  // Tên cũ giữ để các màn hiện có tiếp tục dùng cùng màu ngữ nghĩa.
+  static const statusOk = statusHealthy;
+  static const statusWatch = statusAttention;
+  static const statusOff = statusCritical;
 
   /// Cảnh báo (cam), dùng cho icon cảnh báo và lỗi nhập liệu. Chữ cam đi kèm
   /// chữ đậm hơn ([warningText]) để đủ tương phản trên nền sáng.
@@ -32,10 +37,13 @@ abstract final class AppColors {
   static const surfaceTint = tint;
   static const hairline = border;
   static const textMuted = textSecondary;
-  static const statusWatchBright = statusWatch;
-  static const statusOkTint = Color(0xFFE2F4EA);
-  static const statusWatchTint = Color(0xFFFFF1CC);
-  static const statusOffTint = Color(0xFFFBE4E2);
+  static const statusWatchBright = statusAttention;
+  static const statusHealthyTint = Color(0xFFE2F4EA);
+  static const statusAttentionTint = Color(0xFFFFF1CC);
+  static const statusCriticalTint = Color(0xFFFBE4E2);
+  static const statusOkTint = statusHealthyTint;
+  static const statusWatchTint = statusAttentionTint;
+  static const statusOffTint = statusCriticalTint;
   static const shadow = Color(0x1F0C2D32);
   static const shadowSoft = Color(0x120C2D32);
   static const onInkMuted = Color(0xB3FFFFFF);

@@ -4,6 +4,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/fore_card.dart';
 import '../../../core/widgets/ops_icon.dart';
+import '../../../core/widgets/page_scaffold.dart';
 import '../../ops/shift/application/shift_controller.dart';
 import '../../stocktake/domain/stocktake_models.dart';
 
@@ -25,8 +26,7 @@ class InventoryHubView extends StatelessWidget {
         listenable: shift,
         builder: (context, _) {
           final missing = shift.closeStatus?.missingCounts ?? 0;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+          return PageScaffold(
             children: [
               const Text('Kho', style: AppTextStyles.display),
               const SizedBox(height: 6),

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/fore_card.dart';
-import '../../core/widgets/ops_icon.dart';
+import '../../core/widgets/fore_action_icons.dart';
+import '../../core/widgets/page_scaffold.dart';
 
 /// Tab "Thêm": ghi hao hụt, thu/chi tiền mặt, tài khoản và đăng xuất.
 /// Các việc của chủ quán (báo cáo, thực đơn, cài đặt) sẽ thêm ở đây sau; nhân viên không thấy.
@@ -11,6 +12,7 @@ class MoreView extends StatelessWidget {
   const MoreView({
     super.key,
     required this.personName,
+    this.header,
     required this.roleLabel,
     required this.shopName,
     required this.hasOpenShift,
@@ -24,6 +26,7 @@ class MoreView extends StatelessWidget {
   });
 
   final String personName;
+  final Widget? header;
   final String roleLabel;
   final String shopName;
 
@@ -38,8 +41,8 @@ class MoreView extends StatelessWidget {
   final VoidCallback onSignOut;
 
   @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+  Widget build(BuildContext context) => PageScaffold(
+        header: header,
         children: [
           const Text('Thêm', style: AppTextStyles.display),
           const SizedBox(height: 20),
@@ -51,7 +54,7 @@ class MoreView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ActionTile(
-            icon: const ForeIcon(ForeIcons.warning, color: AppColors.ink),
+            icon: const Icon(ForeActionIcons.waste, color: AppColors.ink),
             title: 'Ghi hao hụt',
             subtitle: hasOpenShift
                 ? 'Đổ bỏ, làm sai, cho nhân viên, thử vị'
@@ -60,7 +63,8 @@ class MoreView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ActionTile(
-            icon: const ForeIcon(ForeIcons.bag, color: AppColors.ink),
+            icon:
+                const Icon(ForeActionIcons.cashMovement, color: AppColors.ink),
             title: 'Thu / chi tiền mặt',
             subtitle:
                 hasOpenShift ? 'Mua đá, chủ rút tiền...' : 'Mở ca để dùng',

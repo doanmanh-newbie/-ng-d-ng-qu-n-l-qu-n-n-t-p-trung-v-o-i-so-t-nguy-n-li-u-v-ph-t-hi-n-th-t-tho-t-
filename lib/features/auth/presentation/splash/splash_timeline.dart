@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/animation.dart';
-import 'package:flutter/scheduler.dart';
 
 /// "Nhạc trưởng" của màn Loading: giữ MỘT nhịp cho cả màn hình.
 ///

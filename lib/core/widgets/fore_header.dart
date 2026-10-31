@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 import 'brand_logo.dart';
+import 'status_chip.dart';
 
 /// Đầu trang chung của mọi màn trong ca: tên quán, "Nhân viên · tên", logo và (tùy chọn) nhãn trạng thái ca.
 class ForeHeader extends StatelessWidget {
@@ -33,7 +35,7 @@ class ForeHeader extends StatelessWidget {
         child: SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -46,11 +48,9 @@ class ForeHeader extends StatelessWidget {
                         children: [
                           Text(
                             shopName,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.brand,
-                              height: 1.2,
+                            style: AppTextStyles.wordmark.copyWith(
+                              fontSize: 26,
+                              height: 1.08,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -59,8 +59,9 @@ class ForeHeader extends StatelessWidget {
                           Text(
                             subtitle,
                             style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textPrimary,
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                              height: 1.3,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -123,51 +124,8 @@ class ShiftPill extends StatelessWidget {
   final bool active;
 
   @override
-  Widget build(BuildContext context) => Semantics(
+  Widget build(BuildContext context) => StatusChip(
         label: label,
-        child: ExcludeSemantics(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: active ? AppColors.statusOkTint : AppColors.surfaceTint,
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadowSoft,
-                  blurRadius: 10,
-                  offset: Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: active ? AppColors.statusOk : AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        severity: active ? StatusSeverity.healthy : StatusSeverity.neutral,
       );
 }

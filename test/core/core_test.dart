@@ -20,6 +20,16 @@ void main() {
     });
   });
 
+  group('formatQuantity', () {
+    test('dùng dấu chấm ngăn nghìn và giữ đơn vị nguyên liệu', () {
+      expect(formatQuantity(4400, unit: 'g'), '4.400 g');
+      expect(formatQuantity(20000, unit: 'ml'), '20.000 ml');
+      expect(formatQuantity(-2680, unit: 'g'), '-2.680 g');
+      expect(formatQuantity(0, unit: 'cái'), '0 cái');
+      expect(formatServings(1000, 'ly'), '1.000 ly');
+    });
+  });
+
   group('parseMoney', () {
     test('đọc các kiểu người dùng hay gõ', () {
       expect(parseMoney('1.250.000'), equals(1250000));
@@ -66,26 +76,39 @@ void main() {
   group('mapPostgrestError', () {
     test('mã chữ in hoa là lỗi nghiệp vụ', () {
       final f = mapPostgrestError(message: 'NO_OPEN_SHIFT', code: 'P0001');
-      expect(f, isA<DatabaseFailure>().having((e) => e.code, 'code', 'NO_OPEN_SHIFT'));
+      expect(
+          f,
+          isA<DatabaseFailure>()
+              .having((e) => e.code, 'code', 'NO_OPEN_SHIFT'));
     });
     test('có khoảng trắng thừa vẫn nhận ra', () {
-      expect(mapPostgrestError(message: ' LAST_OWNER \n', code: '42501'), isA<DatabaseFailure>());
+      expect(mapPostgrestError(message: ' LAST_OWNER \n', code: '42501'),
+          isA<DatabaseFailure>());
     });
     test('JWT hết hạn là lỗi phiên', () {
-      expect(mapPostgrestError(message: 'JWT expired', code: 'PGRST301'), isA<SessionExpiredFailure>());
-      expect(mapPostgrestError(message: 'Invalid JWT', code: null), isA<SessionExpiredFailure>());
+      expect(mapPostgrestError(message: 'JWT expired', code: 'PGRST301'),
+          isA<SessionExpiredFailure>());
+      expect(mapPostgrestError(message: 'Invalid JWT', code: null),
+          isA<SessionExpiredFailure>());
     });
     test('lỗi lạ là UnknownFailure', () {
-      expect(mapPostgrestError(message: 'permission denied for table staff', code: '42501'), isA<UnknownFailure>());
-      expect(mapPostgrestError(message: 'ab', code: null), isA<UnknownFailure>());
+      expect(
+          mapPostgrestError(
+              message: 'permission denied for table staff', code: '42501'),
+          isA<UnknownFailure>());
+      expect(
+          mapPostgrestError(message: 'ab', code: null), isA<UnknownFailure>());
     });
   });
 
   group('FailureMessage', () {
     test('mã database có câu tiếng Việt, mã lạ có câu chung', () {
-      expect(const DatabaseFailure('NO_OPEN_SHIFT').userMessage, contains('Chưa có ca đang mở'));
-      expect(const DatabaseFailure('DISCOUNT_INVALID').userMessage, contains('Giảm giá'));
-      expect(const DatabaseFailure('MA_LA_CHUA_CO').userMessage, equals('Có lỗi xảy ra. Thử lại sau ít phút.'));
+      expect(const DatabaseFailure('NO_OPEN_SHIFT').userMessage,
+          contains('Chưa có ca đang mở'));
+      expect(const DatabaseFailure('DISCOUNT_INVALID').userMessage,
+          contains('Giảm giá'));
+      expect(const DatabaseFailure('MA_LA_CHUA_CO').userMessage,
+          equals('Có lỗi xảy ra. Thử lại sau ít phút.'));
     });
     test('mọi mã trong bảng đều có câu không rỗng', () {
       for (final e in databaseMessages.entries) {
@@ -93,7 +116,12 @@ void main() {
       }
     });
     test('lỗi máy khác gây ra thì tự tải lại', () {
-      for (final c in ['TABLE_HAS_OPEN_BILL', 'BILL_NOT_OPEN', 'NO_OPEN_SHIFT', 'LINE_ALREADY_VOIDED']) {
+      for (final c in [
+        'TABLE_HAS_OPEN_BILL',
+        'BILL_NOT_OPEN',
+        'NO_OPEN_SHIFT',
+        'LINE_ALREADY_VOIDED'
+      ]) {
         expect(DatabaseFailure(c).shouldRefresh, isTrue, reason: c);
       }
       expect(const DatabaseFailure('REASON_REQUIRED').shouldRefresh, isFalse);
@@ -109,27 +137,42 @@ void main() {
 
   group('RowReader', () {
     test('đọc đúng kiểu', () {
-      final row = <String, dynamic>{'s': 'x', 'n': 5, 'f': true, 't': '2026-10-23T08:02:00+07:00', 'z': null};
+      final row = <String, dynamic>{
+        's': 'x',
+        'n': 5,
+        'f': true,
+        't': '2026-10-23T08:02:00+07:00',
+        'z': null
+      };
       expect(row.str('s'), equals('x'));
       expect(row.integer('n'), equals(5));
       expect(row.flag('f'), isTrue);
       expect(row.strOrNull('z'), isNull);
       expect(row.intOrNull('z'), isNull);
-      expect(row.time('t').isAtSameMomentAs(DateTime.utc(2026, 10, 23, 1, 2)), isTrue); // 08:02 giờ +07 = 01:02 UTC
+      expect(row.time('t').isAtSameMomentAs(DateTime.utc(2026, 10, 23, 1, 2)),
+          isTrue); // 08:02 giờ +07 = 01:02 UTC
     });
     test('sai kiểu hoặc thiếu thì báo rõ tên trường', () {
       final row = <String, dynamic>{'n': 'abc'};
-      expect(() => row.integer('n'), throwsA(isA<FormatException>().having((e) => e.message, 'message', contains('"n"'))));
+      expect(
+          () => row.integer('n'),
+          throwsA(isA<FormatException>()
+              .having((e) => e.message, 'message', contains('"n"'))));
       expect(() => row.str('thieu'), throwsA(isA<FormatException>()));
       expect(() => row.flag('n'), throwsA(isA<FormatException>()));
       expect(() => row.time('n'), throwsA(isA<FormatException>()));
     });
     test('số thực nguyên (3.0) được chấp nhận, 3.5 thì không', () {
       expect(<String, dynamic>{'n': 3.0}.integer('n'), equals(3));
-      expect(() => <String, dynamic>{'n': 3.5}.integer('n'), throwsA(isA<FormatException>()));
+      expect(() => <String, dynamic>{'n': 3.5}.integer('n'),
+          throwsA(isA<FormatException>()));
     });
     test('asRows / asObject kiểm tra kiểu', () {
-      expect(asRows([<String, dynamic>{'a': 1}]), hasLength(1));
+      expect(
+          asRows([
+            <String, dynamic>{'a': 1}
+          ]),
+          hasLength(1));
       expect(() => asRows('x'), throwsA(isA<FormatException>()));
       expect(() => asRows([1]), throwsA(isA<FormatException>()));
       expect(asObject(<String, dynamic>{'a': 1}), equals({'a': 1}));
@@ -140,11 +183,33 @@ void main() {
   group('groupMenuRows', () {
     test('gộp size theo món và giữ thứ tự database', () {
       final items = groupMenuRows([
-        {'item_id': 'bm', 'item_name': 'Bánh mì trứng', 'group_name': 'Ăn nhẹ', 'size_id': 'bm-1', 'size_name': 'Phần', 'price': 20000},
-        {'item_id': 'cf', 'item_name': 'Cà phê sữa', 'group_name': null, 'size_id': 'cf-m', 'size_name': 'M', 'price': 25000},
-        {'item_id': 'cf', 'item_name': 'Cà phê sữa', 'group_name': null, 'size_id': 'cf-l', 'size_name': 'L', 'price': 30000},
+        {
+          'item_id': 'bm',
+          'item_name': 'Bánh mì trứng',
+          'group_name': 'Ăn nhẹ',
+          'size_id': 'bm-1',
+          'size_name': 'Phần',
+          'price': 20000
+        },
+        {
+          'item_id': 'cf',
+          'item_name': 'Cà phê sữa',
+          'group_name': null,
+          'size_id': 'cf-m',
+          'size_name': 'M',
+          'price': 25000
+        },
+        {
+          'item_id': 'cf',
+          'item_name': 'Cà phê sữa',
+          'group_name': null,
+          'size_id': 'cf-l',
+          'size_name': 'L',
+          'price': 30000
+        },
       ]);
-      expect(items.map((i) => i.name).toList(), equals(['Bánh mì trứng', 'Cà phê sữa']));
+      expect(items.map((i) => i.name).toList(),
+          equals(['Bánh mì trứng', 'Cà phê sữa']));
       expect(items[1].sizes.map((s) => s.name).toList(), equals(['M', 'L']));
       expect(items[1].group, isNull);
     });
@@ -152,12 +217,40 @@ void main() {
 
   group('BillView', () {
     Map<String, dynamic> json() => {
-          'id': 'b1', 'bill_no': 84, 'status': 'open', 'bill_type': 'dine_in', 'table_id': 't', 'table_name': 'Bàn 2',
-          'area_name': 'Tầng 1', 'guests': 2, 'opened_at': '2026-10-23T08:16:00+00:00', 'discount': 5000,
-          'discount_reason': 'khách quen', 'payment_method': null, 'prep_done': false, 'subtotal': 70000, 'payable': 65000,
+          'id': 'b1',
+          'bill_no': 84,
+          'status': 'open',
+          'bill_type': 'dine_in',
+          'table_id': 't',
+          'table_name': 'Bàn 2',
+          'area_name': 'Tầng 1',
+          'guests': 2,
+          'opened_at': '2026-10-23T08:16:00+00:00',
+          'discount': 5000,
+          'discount_reason': 'khách quen',
+          'payment_method': null,
+          'prep_done': false,
+          'subtotal': 70000,
+          'payable': 65000,
           'lines': [
-            {'id': 'l1', 'size_id': 's', 'item_name': 'Cà phê', 'size_name': 'M', 'qty': 2, 'unit_price': 25000, 'voided': false},
-            {'id': 'l2', 'size_id': 's2', 'item_name': 'Bánh', 'size_name': 'P', 'qty': 3, 'unit_price': 20000, 'voided': true},
+            {
+              'id': 'l1',
+              'size_id': 's',
+              'item_name': 'Cà phê',
+              'size_name': 'M',
+              'qty': 2,
+              'unit_price': 25000,
+              'voided': false
+            },
+            {
+              'id': 'l2',
+              'size_id': 's2',
+              'item_name': 'Bánh',
+              'size_name': 'P',
+              'qty': 3,
+              'unit_price': 20000,
+              'voided': true
+            },
           ],
         };
     test('đọc đủ trường, dòng đã bỏ không tính vào số phần', () {
@@ -170,12 +263,16 @@ void main() {
       expect(b.payable, equals(65000));
     });
     test('đơn mang đi có tiêu đề kèm số bill', () {
-      final j = json()..['bill_type'] = 'take_away'..['table_name'] = null;
+      final j = json()
+        ..['bill_type'] = 'take_away'
+        ..['table_name'] = null;
       expect(BillView.fromJson(j).title, equals('Mang đi #084'));
     });
     test('trạng thái hoặc loại lạ thì báo lỗi, không đoán', () {
-      expect(() => BillView.fromJson(json()..['status'] = 'void'), throwsA(isA<FormatException>()));
-      expect(() => BillView.fromJson(json()..['bill_type'] = 'delivery'), throwsA(isA<FormatException>()));
+      expect(() => BillView.fromJson(json()..['status'] = 'void'),
+          throwsA(isA<FormatException>()));
+      expect(() => BillView.fromJson(json()..['bill_type'] = 'delivery'),
+          throwsA(isA<FormatException>()));
     });
   });
 
@@ -201,9 +298,11 @@ void main() {
       expect(quantityInBase('1e12', ml), isNull);
     });
     test('unitChoices theo đơn vị gốc', () {
-      expect(unitChoices('ml').map((u) => u.label).toList(), equals(['ml', 'lít']));
+      expect(unitChoices('ml').map((u) => u.label).toList(),
+          equals(['ml', 'lít']));
       expect(unitChoices('g').map((u) => u.factor).toList(), equals([1, 1000]));
-      expect(unitChoices('piece').map((u) => u.label).toList(), equals(['cái']));
+      expect(
+          unitChoices('piece').map((u) => u.label).toList(), equals(['cái']));
     });
   });
 }

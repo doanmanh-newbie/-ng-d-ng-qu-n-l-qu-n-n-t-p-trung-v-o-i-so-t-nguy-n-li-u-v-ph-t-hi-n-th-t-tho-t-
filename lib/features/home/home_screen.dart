@@ -267,13 +267,14 @@ class _HomeScreenState extends State<OpsHomeScreen>
       onTeam: () => Navigator.of(context).pushNamed(AppRoutes.team),
       onSignOut: _signOut,
     );
-    if (!_shift.hasOpenShift)
+    if (!_shift.hasOpenShift) {
       return tab == 4
           ? more
           : NoShiftView(
               shift: _shift,
               onCountOpening: () => _openCount(CountKind.open),
             );
+    }
     return switch (tab) {
       0 => TablesView(
           tables: _tables,

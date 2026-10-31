@@ -63,7 +63,7 @@ Chủ quán cũng dùng được mọi màn dưới đây. Mỗi màn là một 
 
 ### 1. Đăng nhập
 
-> Ghi chú: áp dụng quyết định thử nghiệm tại mục “Quyết định đã chốt” trong `NOTES.md`.
+> Giai đoạn thử nghiệm: chủ quán đăng nhập bằng email và mật khẩu. Nhân viên đăng nhập/đăng ký bằng số điện thoại hoặc email, không mật khẩu và không mã xác nhận; đây là luồng thử nghiệm, chưa phải xác thực an toàn cho môi trường production.
 
 | Mục | Nội dung |
 | --- | --- |
